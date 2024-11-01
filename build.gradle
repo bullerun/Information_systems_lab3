@@ -34,8 +34,8 @@ dependencies {
     implementation 'org.postgresql:postgresql:42.7.3'
     //Dotenv
     implementation 'io.github.cdimascio:java-dotenv:5.2.2'
-
-
+    // Jakarta Validation
+    implementation group: 'jakarta.validation', name: 'jakarta.validation-api', version: '3.1.0'
     compileOnly 'org.projectlombok:lombok'
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
     annotationProcessor 'org.projectlombok:lombok'

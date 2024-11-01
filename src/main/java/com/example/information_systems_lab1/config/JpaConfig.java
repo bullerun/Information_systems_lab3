@@ -35,7 +35,7 @@ public class JpaConfig {
         properties.put("jakarta.persistence.jdbc.password", dbPassword);
         properties.put("jakarta.persistence.jdbc.driver", "org.postgresql.Driver");
 
-        // Настройки EclipseLink
+
         properties.put("eclipselink.logging.level", "FINE");
         properties.put("eclipselink.ddl-generation", "create-or-extend-tables");
         properties.put("eclipselink.weaving", "false");
