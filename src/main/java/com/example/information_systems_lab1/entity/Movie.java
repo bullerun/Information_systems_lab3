@@ -63,7 +63,7 @@ public class Movie {
     private Integer length; //Поле не может быть null, Значение поля должно быть больше 0
 
 
-    @Min(value = 1, message = "Значение поля length должно быть больше 0")
+    @Min(value = 1, message = "Значение поля goldenPalmCount должно быть больше 0")
     private int goldenPalmCount; //Значение поля должно быть больше 0
 
     @NotNull(message = "Поле genre не может быть null")
