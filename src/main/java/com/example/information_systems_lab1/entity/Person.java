@@ -31,7 +31,7 @@ public class Person {
     private Color hairColor; //Поле может быть null
 
 
-    @ManyToOne // Указываем связь с Location
+    @OneToOne(cascade = CascadeType.PERSIST)
     @JoinColumn(name = "location_id", nullable = false)
     private Location location; //Поле может быть null
 
