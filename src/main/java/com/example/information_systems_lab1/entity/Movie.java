@@ -5,17 +5,18 @@ import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
-
+@Builder
 @Getter
 @Setter
 @Entity
+@NoArgsConstructor
+@AllArgsConstructor
 public class Movie {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private long id; //Значение поля должно быть больше 0, Значение этого поля должно быть уникальным, Значение этого поля должно генерироваться автоматически
+    private Long id; //Значение поля должно быть больше 0, Значение этого поля должно быть уникальным, Значение этого поля должно генерироваться автоматически
 
 
     @NotNull(message = "Поле name не может быть null")
@@ -23,11 +24,12 @@ public class Movie {
     private String name; //Поле не может быть null, Строка не может быть пустой
 
 
-    @OneToOne
+    @NotNull(message = "Поле coordinates не может быть null")
+    @OneToOne(cascade = CascadeType.PERSIST)
     @JoinColumn(name = "coordinate_id", nullable = false)
     private Coordinates coordinates; //Поле не может быть null
 
-    @NotNull(message = "Поле creationDate не может быть null")
+
     @CreatedDate
     private java.time.LocalDate creationDate; //Поле не может быть null, Значение этого поля должно генерироваться автоматически
 
@@ -41,19 +43,22 @@ public class Movie {
     @Min(value = 1, message = "Значение поля totalBoxOffice должно быть больше 0")
     private Integer totalBoxOffice; //Поле не может быть null, Значение поля должно быть больше 0
 
+    @NotNull(message = "Поле mpaaRating не может быть null")
     @Enumerated(EnumType.STRING)
     private MpaaRating mpaaRating; //Поле не может быть null
 
-    @ManyToOne
+    @NotNull(message = "Поле director не может быть null")
+    @ManyToOne(cascade = CascadeType.PERSIST)
     @JoinColumn(name = "director_id", nullable = false)
     private Person director; //Поле не может быть null
 
 
-    @ManyToOne
+    @ManyToOne(cascade = CascadeType.PERSIST)
     @JoinColumn(name = "screenwriter_id")
     private Person screenwriter;
 
-    @ManyToOne
+    @NotNull(message = "Поле operator не может быть null")
+    @ManyToOne(cascade = CascadeType.PERSIST)
     @JoinColumn(name = "operator_id", nullable = false)
     private Person operator; //Поле не может быть null
 

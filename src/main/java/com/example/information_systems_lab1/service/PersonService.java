@@ -15,8 +15,6 @@ public class PersonService {
 
     @Transactional
     public void addPerson(Person person)  {
-
             personRepository.save(person);
-
     }
 }
