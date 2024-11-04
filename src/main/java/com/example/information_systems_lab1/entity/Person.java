@@ -1,6 +1,7 @@
 package com.example.information_systems_lab1.entity;
 
 import jakarta.persistence.*;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -31,6 +32,7 @@ public class Person {
     private Color hairColor; //Поле может быть null
 
 
+    @NotNull(message = "Поле location не может быть null")
     @OneToOne(cascade = CascadeType.PERSIST)
     @JoinColumn(name = "location_id", nullable = false)
     private Location location; //Поле может быть null

@@ -16,7 +16,7 @@ public class PersonController {
 
     @PostMapping("/add")
     @ResponseStatus(HttpStatus.CREATED)
-    public void add(@Valid @RequestBody  Person person) {
+    public void createOrUpdateEmployee(@Valid @RequestBody Person person) {
         personService.addPerson(person);
     }
 }

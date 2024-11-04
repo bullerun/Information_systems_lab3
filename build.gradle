@@ -36,6 +36,11 @@ dependencies {
     implementation 'io.github.cdimascio:java-dotenv:5.2.2'
     // Jakarta Validation
     implementation group: 'jakarta.validation', name: 'jakarta.validation-api', version: '3.1.0'
+
+    // из-за того что этого не было не валидировалось..., что это хз, почему я везде использую jakarta для валидации, но тут мне нужен спринг, чтобы все работало, как это взаимосвязано
+    // где инкапсуляция??????????
+    implementation 'org.springframework.boot:spring-boot-starter-validation:3.3.3'
+
     compileOnly 'org.projectlombok:lombok'
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
     annotationProcessor 'org.projectlombok:lombok'

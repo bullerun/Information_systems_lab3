@@ -14,7 +14,9 @@ public class PersonService {
     private final LocationRepository locationRepository;
 
     @Transactional
-    public void addPerson(Person person) {
-        personRepository.save(person);
+    public void addPerson(Person person)  {
+
+            personRepository.save(person);
+
     }
 }
