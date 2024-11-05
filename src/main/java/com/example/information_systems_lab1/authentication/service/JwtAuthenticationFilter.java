@@ -27,19 +27,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final UserServices userService;
 
     // Список публичных маршрутов
-    private static final List<String> PUBLIC_PATHS = List.of("/register", "/login", "/get/points");
+
 
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response,
                                     @NonNull FilterChain filterChain) throws ServletException, IOException {
-
-        String requestPath = request.getRequestURI();
-
-        // Проверка, является ли путь публичным
-        if (PUBLIC_PATHS.stream().anyMatch(requestPath::startsWith)) {
-            filterChain.doFilter(request, response);
-            return;
-        }
 
         String authHeader = request.getHeader(HEADER_NAME);
 
@@ -53,10 +45,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String username = jwtService.getNameFromJwt(jwt);
 
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            UserDetails userDetails = userService.userDetailsService().loadUserByUsername(username);
-
             // Если токен валиден, выполняем аутентификацию
-            if (jwtService.isTokenValid(jwt, userDetails)) {
+            if (jwtService.isTokenValid(jwt)) {
+                UserDetails userDetails = userService.userDetailsService().loadUserByUsername(username);
                 UsernamePasswordAuthenticationToken authToken =
                         new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
                 authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));

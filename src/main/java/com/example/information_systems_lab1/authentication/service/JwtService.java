@@ -41,8 +41,7 @@ public class JwtService {
         return Jwts.parser().verifyWith(getSigningKey()).build().parseSignedClaims(token).getPayload().getExpiration().before(new Date());
     }
 
-    public boolean isTokenValid(String token, UserDetails userDetails) {
-        final String userName = getNameFromJwt(token);
-        return (userName.equals(userDetails.getUsername())) && !isTokenExpired(token);
+    public boolean isTokenValid(String token) {
+        return !isTokenExpired(token);
     }
 }

@@ -74,4 +74,13 @@ public class Movie {
     @NotNull(message = "Поле genre не может быть null")
     @Enumerated(EnumType.STRING)
     private MovieGenre genre; //Поле может быть null
+
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "owner_id", nullable = false, insertable = false, updatable = false)
+    private User owner;
+
+    @Column(name = "owner_id", nullable = false)
+    private Long ownerId;
+
 }

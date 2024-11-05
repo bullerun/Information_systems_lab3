@@ -44,4 +44,11 @@ public class Person {
     @NotNull(message = "Поле nationality не может быть null")
     @Enumerated(EnumType.STRING)
     private Country nationality; //Поле может быть null
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "owner_id", nullable = false, insertable = false, updatable = false)
+    private User owner;
+
+    @Column(name = "owner_id", nullable = false)
+    private Long ownerId;
 }
