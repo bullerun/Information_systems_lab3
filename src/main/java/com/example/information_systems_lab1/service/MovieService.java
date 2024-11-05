@@ -14,7 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class MovieService {
     private final MovieRepository movieRepository;
-    private final PersonRepository personRepository;
+    private final PersonService personService;
 
 
     @Transactional
@@ -23,34 +23,31 @@ public class MovieService {
 //        TODO ИНКАПСУЛЯЦИЯ
         var direction = movieRequest.getDirector();
         if (direction == null) {
-            if (movieRequest.getDirector_id() == null) {
-                throw new Exception("презираю жабу");
+            if (movieRequest.getOperator_id() == null) {
+                throw new Exception("direction не указан");
             }
-            direction = personRepository.findById(movieRequest.getDirector_id())
-                    .orElseThrow(() -> new RuntimeException("презираю жабу"));
+            direction = personService.getPersonById(movieRequest.getDirector_id());
+
         }
 
 
         var screenwriter = movieRequest.getScreenwriter();
         if (screenwriter == null) {
             if (movieRequest.getScreenwriter_id() != null) {
-                screenwriter = personRepository.findById(movieRequest.getScreenwriter_id())
-                        .orElseThrow(() -> new RuntimeException("презираю жабу"));
+                screenwriter =personService.getPersonById(movieRequest.getScreenwriter_id());
             }
         }
 
         var operator = movieRequest.getOperator();
         if (operator == null) {
             if (movieRequest.getOperator_id() == null) {
-                throw new Exception("презираю жабу");
+                throw new Exception("operator не указан");
             }
-            operator = personRepository.findById(movieRequest.getOperator_id())
-                    .orElseThrow(() -> new RuntimeException("презираю жабу"));
+            operator = personService.getPersonById(movieRequest.getOperator_id());
         }
 
-        PersonValidator personValidator = new PersonValidator();
-        personValidator.validatePerson(direction, screenwriter, operator);
 
+        personService.validateDirectionScreenwriterOperator(direction, screenwriter, operator);
         Movie movie = new Movie();
         movie.setName(movieRequest.getName());
         movie.setCoordinates(movieRequest.getCoordinates());
