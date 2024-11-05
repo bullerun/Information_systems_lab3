@@ -1,7 +1,10 @@
 package com.example.information_systems_lab1.service;
 
 import com.example.information_systems_lab1.authentication.service.UserServices;
+import com.example.information_systems_lab1.entity.Coordinates;
 import com.example.information_systems_lab1.entity.Movie;
+import com.example.information_systems_lab1.exeption.InsufficientEditingRightsException;
+import com.example.information_systems_lab1.exeption.MovieNotFoundException;
 import com.example.information_systems_lab1.repository.MovieRepository;
 import com.example.information_systems_lab1.request.MovieRequest;
 import lombok.RequiredArgsConstructor;
@@ -25,7 +28,7 @@ public class MovieService {
                 throw new Exception("direction не указан");
             }
             direction = personService.getPersonById(movieRequest.getDirector_id());
-        }else {
+        } else {
             direction.setOwnerId(userID);
         }
 
@@ -34,7 +37,7 @@ public class MovieService {
             if (movieRequest.getScreenwriter_id() != null) {
                 screenwriter = personService.getPersonById(movieRequest.getScreenwriter_id());
             }
-        }else {
+        } else {
             screenwriter.setOwnerId(userID);
         }
 
@@ -44,7 +47,7 @@ public class MovieService {
                 throw new Exception("operator не указан");
             }
             operator = personService.getPersonById(movieRequest.getOperator_id());
-        }else {
+        } else {
             operator.setOwnerId(userID);
         }
 
@@ -64,5 +67,30 @@ public class MovieService {
         movie.setOperator(operator);
         movie.setOwnerId(userID);
         movieRepository.save(movie);
+    }
+
+    public void update(Long id, Movie updatedMovie) throws MovieNotFoundException, InsufficientEditingRightsException {
+        var movie = movieRepository.findById(id).orElseThrow(() -> new MovieNotFoundException("а чет не нашлось фильма то"));
+        if (!movie.getOwnerId().equals(userService.getCurrentUserId())) {
+            throw new InsufficientEditingRightsException("недостаточно прав на изменение фильма");
+        }
+        movie.setName(updatedMovie.getName());
+        if (movie.getCoordinates().equals(updatedMovie.getCoordinates())) {
+            updateCoordinates(movie.getCoordinates(), updatedMovie.getCoordinates());
+        }
+        movie.setOscarsCount(updatedMovie.getOscarsCount());
+        movie.setBudget(updatedMovie.getBudget());
+        movie.setTotalBoxOffice(updatedMovie.getTotalBoxOffice());
+        movie.setMpaaRating(updatedMovie.getMpaaRating());
+        personService.updatePerson(movie.getDirector(), updatedMovie.getDirector(), "direction");
+        personService.updatePerson(movie.getScreenwriter(), updatedMovie.getScreenwriter(), "screenwriter");
+        personService.updatePerson(movie.getOperator(), updatedMovie.getOperator(), "operator");
+        movie.setLength(updatedMovie.getLength());
+        movie.setGenre(updatedMovie.getGenre());
+    }
+
+    public void updateCoordinates(Coordinates oldCoordinates, Coordinates newCoordinates) {
+        oldCoordinates.setX(newCoordinates.getX());
+        oldCoordinates.setY(newCoordinates.getY());
     }
 }

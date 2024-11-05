@@ -7,6 +7,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
+
 @Builder
 @Getter
 @Setter
@@ -48,7 +49,7 @@ public class Movie {
     private MpaaRating mpaaRating; //Поле не может быть null
 
     @NotNull(message = "Поле director не может быть null")
-    @ManyToOne(cascade = CascadeType.PERSIST)
+    @ManyToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "director_id", nullable = false)
     private Person director; //Поле не может быть null
 

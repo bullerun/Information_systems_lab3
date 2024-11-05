@@ -17,6 +17,28 @@ public class Coordinates {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        Coordinates that = (Coordinates) o;
+
+        if (Double.compare(x, that.x) != 0) return false;
+        return y.equals(that.y);
+    }
+
+    @Override
+    public int hashCode() {
+        int result;
+        long temp;
+        temp = Double.doubleToLongBits(x);
+        result = (int) (temp ^ (temp >>> 32));
+        result = 31 * result + y.hashCode();
+        return result;
+    }
+
     @DecimalMin(value = "-737.0", inclusive = false, message = "Значение x должно быть больше -737")
     private double x;
     @NotNull(message = "Поле y не может быть null")

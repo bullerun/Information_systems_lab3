@@ -1,6 +1,7 @@
 package com.example.information_systems_lab1.controller;
 
 import com.example.information_systems_lab1.entity.Person;
+import com.example.information_systems_lab1.exeption.InsufficientEditingRightsException;
 import com.example.information_systems_lab1.exeption.PersonNotFoundException;
 import com.example.information_systems_lab1.service.PersonService;
 import jakarta.validation.Valid;
@@ -24,9 +25,9 @@ public class PersonController {
 
 
     @PatchMapping("/edit/{id}")
-    public ResponseEntity<?> updateMovie(@PathVariable("id") Long id, @RequestBody Person updatedMovie) {
+    public ResponseEntity<?> updateMovie(@PathVariable("id") Long id, @RequestBody Person updatedPerson) throws InsufficientEditingRightsException {
         try {
-            personService.update(id, updatedMovie);
+            personService.update(id, updatedPerson);
             return ResponseEntity.ok().build();
         } catch (PersonNotFoundException e) {
             return ResponseEntity.notFound().build();

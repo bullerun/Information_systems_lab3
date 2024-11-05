@@ -1,7 +1,9 @@
 package com.example.information_systems_lab1.service;
 
+import com.example.information_systems_lab1.authentication.service.UserServices;
 import com.example.information_systems_lab1.entity.Location;
 import com.example.information_systems_lab1.entity.Person;
+import com.example.information_systems_lab1.exeption.InsufficientEditingRightsException;
 import com.example.information_systems_lab1.exeption.PersonNotFoundException;
 import com.example.information_systems_lab1.exeption.PersonValidationException;
 import com.example.information_systems_lab1.repository.PersonRepository;
@@ -15,7 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class PersonService {
     private final PersonRepository personRepository;
     private final PersonValidator personValidator;
-
+    private final UserServices userService;
     public Person getPersonById(Long id) throws Exception {
         return personRepository.findById(id).orElseThrow(() -> new Exception("презираю жабу"));
     }
@@ -29,13 +31,16 @@ public class PersonService {
         personValidator.validatePerson(direction, screenwriter, operator);
     }
 
-    public void update(Long id, Person personRequest) throws PersonNotFoundException {
-        Person person = personRepository.findById(id).orElseThrow(() -> new RuntimeException("челик не найден" + id));
-        updatePerson(person, personRequest);
+    public void update(Long id, Person personRequest) throws PersonNotFoundException, InsufficientEditingRightsException {
+        Person person = personRepository.findById(id).orElseThrow(() -> new PersonNotFoundException("челик не найден" + id));
+        updatePerson(person, personRequest, "person");
         personRepository.save(person);
     }
 
-    public void updatePerson(Person person, Person personRequest) {
+    public void updatePerson(Person person, Person personRequest, String s) throws InsufficientEditingRightsException {
+        if (!person.getOwnerId().equals(userService.getCurrentUserId())){
+            throw new InsufficientEditingRightsException("недостаточно прав чтобы изменить" + s);
+        }
         person.setName(personRequest.getName());
         person.setEyeColor(personRequest.getEyeColor());
         person.setHairColor(personRequest.getHairColor());
