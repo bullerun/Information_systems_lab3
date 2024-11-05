@@ -54,12 +54,12 @@ public class Movie {
     private Person director; //Поле не может быть null
 
 
-    @ManyToOne(cascade = CascadeType.PERSIST)
+    @ManyToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "screenwriter_id")
     private Person screenwriter;
 
     @NotNull(message = "Поле operator не может быть null")
-    @ManyToOne(cascade = CascadeType.PERSIST)
+    @ManyToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "operator_id", nullable = false)
     private Person operator; //Поле не может быть null
 

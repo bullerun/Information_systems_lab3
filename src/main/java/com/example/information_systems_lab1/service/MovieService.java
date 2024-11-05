@@ -75,7 +75,7 @@ public class MovieService {
             throw new InsufficientEditingRightsException("недостаточно прав на изменение фильма");
         }
         movie.setName(updatedMovie.getName());
-        if (movie.getCoordinates().equals(updatedMovie.getCoordinates())) {
+        if (!movie.getCoordinates().equals(updatedMovie.getCoordinates())) {
             updateCoordinates(movie.getCoordinates(), updatedMovie.getCoordinates());
         }
         movie.setOscarsCount(updatedMovie.getOscarsCount());
@@ -87,6 +87,7 @@ public class MovieService {
         personService.updatePerson(movie.getOperator(), updatedMovie.getOperator(), "operator");
         movie.setLength(updatedMovie.getLength());
         movie.setGenre(updatedMovie.getGenre());
+        movieRepository.save(movie);
     }
 
     public void updateCoordinates(Coordinates oldCoordinates, Coordinates newCoordinates) {

@@ -38,6 +38,12 @@ public class PersonService {
     }
 
     public void updatePerson(Person person, Person personRequest, String s) throws InsufficientEditingRightsException {
+        if (person == null && personRequest == null){
+            return;
+        }
+        if (person == null){
+            person = personRequest;
+        }
         if (!person.getOwnerId().equals(userService.getCurrentUserId())){
             throw new InsufficientEditingRightsException("недостаточно прав чтобы изменить" + s);
         }
