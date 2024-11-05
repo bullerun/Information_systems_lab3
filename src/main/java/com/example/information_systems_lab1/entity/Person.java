@@ -32,7 +32,7 @@ public class Person {
 
 
     @NotNull(message = "Поле location не может быть null")
-    @OneToOne(cascade = CascadeType.PERSIST)
+    @OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "location_id", nullable = false)
     private Location location; //Поле может быть null
 
