@@ -68,6 +68,7 @@ public class MovieService {
         movieRepository.save(movie);
     }
 
+    @Transactional
     public void update(Long id, MovieRequest updatedMovie) throws PersonNotFoundException, InsufficientEditingRightsException, MovieNotFoundException, OneStringException {
         var movie = movieRepository.findById(id).orElseThrow(() -> new MovieNotFoundException("а чет не нашлось фильма то"));
         if (!movie.getOwnerId().equals(userService.getCurrentUserId())) {
@@ -90,17 +91,20 @@ public class MovieService {
     public void selectHowUpdatePerson(Movie movie, MovieRequest updatedMovie) throws InsufficientEditingRightsException, PersonNotFoundException {
         if (updatedMovie.getDirector_id() != null) {
             movie.setDirector(personService.getPersonById(updatedMovie.getDirector_id()));
-        } else {
+        } else if (updatedMovie.getDirector() != null) {
             personService.updatePerson(movie.getDirector(), updatedMovie.getDirector(), "direction");
         }
         if (updatedMovie.getScreenwriter_id() != null) {
-            movie.setDirector(personService.getPersonById(updatedMovie.getScreenwriter_id()));
-        } else {
+            movie.setScreenwriter(personService.getPersonById(updatedMovie.getScreenwriter_id()));
+        } else if (movie.getScreenwriter() == null) {
+            movie.setScreenwriter(updatedMovie.getScreenwriter());
+            movie.getScreenwriter().setOwnerId(userService.getCurrentUserId());
+        } else if (updatedMovie.getScreenwriter() != null) {
             personService.updatePerson(movie.getScreenwriter(), updatedMovie.getScreenwriter(), "screenwriter");
         }
         if (updatedMovie.getOperator_id() != null) {
-            movie.setDirector(personService.getPersonById(updatedMovie.getOperator_id()));
-        } else {
+            movie.setOperator(personService.getPersonById(updatedMovie.getOperator_id()));
+        } else if (updatedMovie.getOperator() != null) {
             personService.updatePerson(movie.getOperator(), updatedMovie.getOperator(), "operator");
         }
 

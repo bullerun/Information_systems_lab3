@@ -42,9 +42,6 @@ public class PersonService {
         if (person == null && personRequest == null){
             return;
         }
-        if (person == null){
-            person = personRequest;
-        }
         if (!person.getOwnerId().equals(userService.getCurrentUserId())){
             throw new InsufficientEditingRightsException("недостаточно прав чтобы изменить" + s);
         }
