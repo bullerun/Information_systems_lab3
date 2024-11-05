@@ -11,7 +11,6 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class PersonService {
     private final PersonRepository personRepository;
-    private final LocationRepository locationRepository;
 
     @Transactional
     public void addPerson(Person person)  {

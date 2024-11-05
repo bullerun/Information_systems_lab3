@@ -1,5 +1,6 @@
 package com.example.information_systems_lab1.controller;
 
+import com.example.information_systems_lab1.exeption.PersonValidationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -31,5 +32,11 @@ public class GlobalExceptionHandler {
             errors.put(fieldName, errorMessage);
         });
         return errors;
+    }
+
+    @ExceptionHandler(PersonValidationException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public Map<String, Map<String, String>> handlePersonValidationException(PersonValidationException ex) {
+        return ex.getExceptions();
     }
 }

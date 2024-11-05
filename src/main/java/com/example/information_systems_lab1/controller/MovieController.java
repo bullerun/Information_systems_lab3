@@ -1,6 +1,5 @@
 package com.example.information_systems_lab1.controller;
 
-import com.example.information_systems_lab1.entity.Movie;
 import com.example.information_systems_lab1.request.MovieRequest;
 import com.example.information_systems_lab1.service.MovieService;
 import jakarta.validation.Valid;
@@ -16,11 +15,7 @@ public class MovieController {
 
     @ResponseStatus(HttpStatus.CREATED)
     @PostMapping("/add")
-    public void addMovie(@Valid @RequestBody MovieRequest movie)  {
-        try {
-            movieService.addMovie(movie);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+    public void addMovie(@Valid @RequestBody MovieRequest movie) throws Exception {
+        movieService.addMovie(movie);
     }
 }

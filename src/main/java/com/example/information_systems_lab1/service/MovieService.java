@@ -4,6 +4,7 @@ import com.example.information_systems_lab1.entity.Movie;
 import com.example.information_systems_lab1.repository.MovieRepository;
 import com.example.information_systems_lab1.repository.PersonRepository;
 import com.example.information_systems_lab1.request.MovieRequest;
+import com.example.information_systems_lab1.validator.PersonValidator;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -15,9 +16,11 @@ public class MovieService {
     private final MovieRepository movieRepository;
     private final PersonRepository personRepository;
 
+
     @Transactional
     public void addMovie(MovieRequest movieRequest) throws Exception {
 //       // TODO сделать эксепшены чтобы было КРАСИВА
+//        TODO ИНКАПСУЛЯЦИЯ
         var direction = movieRequest.getDirector();
         if (direction == null) {
             if (movieRequest.getDirector_id() == null) {
@@ -45,7 +48,9 @@ public class MovieService {
                     .orElseThrow(() -> new RuntimeException("презираю жабу"));
         }
 
-        //TODO нужно как-то проверить правильность Person
+        PersonValidator personValidator = new PersonValidator();
+        personValidator.validatePerson(direction, screenwriter, operator);
+
         Movie movie = new Movie();
         movie.setName(movieRequest.getName());
         movie.setCoordinates(movieRequest.getCoordinates());
