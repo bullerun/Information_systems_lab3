@@ -3,8 +3,7 @@ package com.example.information_systems_lab1.service;
 import com.example.information_systems_lab1.authentication.service.UserServices;
 import com.example.information_systems_lab1.entity.Coordinates;
 import com.example.information_systems_lab1.entity.Movie;
-import com.example.information_systems_lab1.exeption.InsufficientEditingRightsException;
-import com.example.information_systems_lab1.exeption.MovieNotFoundException;
+import com.example.information_systems_lab1.exeption.*;
 import com.example.information_systems_lab1.repository.MovieRepository;
 import com.example.information_systems_lab1.request.MovieRequest;
 import lombok.RequiredArgsConstructor;
@@ -19,13 +18,13 @@ public class MovieService {
     private final UserServices userService;
 
     @Transactional
-    public void addMovie(MovieRequest movieRequest) throws Exception {
+    public void addMovie(MovieRequest movieRequest) throws OneStringException, PersonNotFoundException, PersonValidationException {
 //       // TODO сделать эксепшены чтобы было КРАСИВА
         var userID = userService.getCurrentUserId();
         var direction = movieRequest.getDirector();
         if (direction == null) {
-            if (movieRequest.getOperator_id() == null) {
-                throw new Exception("direction не указан");
+            if (movieRequest.getDirector_id() == null) {
+                throw new OneStringException("direction не указан");
             }
             direction = personService.getPersonById(movieRequest.getDirector_id());
         } else {
@@ -44,7 +43,7 @@ public class MovieService {
         var operator = movieRequest.getOperator();
         if (operator == null) {
             if (movieRequest.getOperator_id() == null) {
-                throw new Exception("operator не указан");
+                throw new OneStringException("operator не указан");
             }
             operator = personService.getPersonById(movieRequest.getOperator_id());
         } else {
@@ -69,7 +68,7 @@ public class MovieService {
         movieRepository.save(movie);
     }
 
-    public void update(Long id, Movie updatedMovie) throws MovieNotFoundException, InsufficientEditingRightsException {
+    public void update(Long id, MovieRequest updatedMovie) throws PersonNotFoundException, InsufficientEditingRightsException, MovieNotFoundException, OneStringException {
         var movie = movieRepository.findById(id).orElseThrow(() -> new MovieNotFoundException("а чет не нашлось фильма то"));
         if (!movie.getOwnerId().equals(userService.getCurrentUserId())) {
             throw new InsufficientEditingRightsException("недостаточно прав на изменение фильма");
@@ -78,16 +77,33 @@ public class MovieService {
         if (!movie.getCoordinates().equals(updatedMovie.getCoordinates())) {
             updateCoordinates(movie.getCoordinates(), updatedMovie.getCoordinates());
         }
+        selectHowUpdatePerson(movie, updatedMovie);
         movie.setOscarsCount(updatedMovie.getOscarsCount());
         movie.setBudget(updatedMovie.getBudget());
         movie.setTotalBoxOffice(updatedMovie.getTotalBoxOffice());
         movie.setMpaaRating(updatedMovie.getMpaaRating());
-        personService.updatePerson(movie.getDirector(), updatedMovie.getDirector(), "direction");
-        personService.updatePerson(movie.getScreenwriter(), updatedMovie.getScreenwriter(), "screenwriter");
-        personService.updatePerson(movie.getOperator(), updatedMovie.getOperator(), "operator");
         movie.setLength(updatedMovie.getLength());
         movie.setGenre(updatedMovie.getGenre());
         movieRepository.save(movie);
+    }
+
+    public void selectHowUpdatePerson(Movie movie, MovieRequest updatedMovie) throws InsufficientEditingRightsException, PersonNotFoundException {
+        if (updatedMovie.getDirector_id() != null) {
+            movie.setDirector(personService.getPersonById(updatedMovie.getDirector_id()));
+        } else {
+            personService.updatePerson(movie.getDirector(), updatedMovie.getDirector(), "direction");
+        }
+        if (updatedMovie.getScreenwriter_id() != null) {
+            movie.setDirector(personService.getPersonById(updatedMovie.getScreenwriter_id()));
+        } else {
+            personService.updatePerson(movie.getScreenwriter(), updatedMovie.getScreenwriter(), "screenwriter");
+        }
+        if (updatedMovie.getOperator_id() != null) {
+            movie.setDirector(personService.getPersonById(updatedMovie.getOperator_id()));
+        } else {
+            personService.updatePerson(movie.getOperator(), updatedMovie.getOperator(), "operator");
+        }
+
     }
 
     public void updateCoordinates(Coordinates oldCoordinates, Coordinates newCoordinates) {

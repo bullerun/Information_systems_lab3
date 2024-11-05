@@ -18,12 +18,13 @@ public class PersonService {
     private final PersonRepository personRepository;
     private final PersonValidator personValidator;
     private final UserServices userService;
-    public Person getPersonById(Long id) throws Exception {
-        return personRepository.findById(id).orElseThrow(() -> new Exception("презираю жабу"));
+    public Person getPersonById(Long id) throws PersonNotFoundException {
+        return personRepository.findById(id).orElseThrow(() -> new PersonNotFoundException("презираю жабу"));
     }
 
     @Transactional
     public void addPerson(Person person) {
+        person.setOwnerId(userService.getCurrentUserId());
         personRepository.save(person);
     }
 
@@ -32,7 +33,7 @@ public class PersonService {
     }
 
     public void update(Long id, Person personRequest) throws PersonNotFoundException, InsufficientEditingRightsException {
-        Person person = personRepository.findById(id).orElseThrow(() -> new PersonNotFoundException("челик не найден" + id));
+        Person person = getPersonById(id);
         updatePerson(person, personRequest, "person");
         personRepository.save(person);
     }

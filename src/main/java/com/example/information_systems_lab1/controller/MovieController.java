@@ -25,12 +25,14 @@ public class MovieController {
     }
 
     @PatchMapping("/edit/{id}")
-    public ResponseEntity<?> updateMovie(@PathVariable("id") Long id, @RequestBody Movie updatedMovie) throws InsufficientEditingRightsException {
+    public ResponseEntity<?> updateMovie(@PathVariable("id") Long id, @RequestBody MovieRequest updatedMovie) throws InsufficientEditingRightsException {
         try {
             movieService.update(id, updatedMovie);
             return ResponseEntity.ok().build();
         } catch (MovieNotFoundException e) {
             return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 }
