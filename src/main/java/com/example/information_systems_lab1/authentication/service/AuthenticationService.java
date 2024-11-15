@@ -19,10 +19,8 @@ public class AuthenticationService {
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     public JwtAuthenticationResponse signUp(SignUpRequest request) {
-
         var user = User.builder()
                 .username(request.getUsername())
-                .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .build();
 
@@ -35,7 +33,6 @@ public class AuthenticationService {
                 request.getUsername(),
                 request.getPassword()
         ));
-
         var user = userService
                 .userDetailsService()
                 .loadUserByUsername(request.getUsername());

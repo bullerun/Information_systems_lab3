@@ -1,9 +1,9 @@
 package com.example.information_systems_lab1.controller;
 
-import com.example.information_systems_lab1.exeption.InsufficientEditingRightsException;
-import com.example.information_systems_lab1.exeption.MovieNotFoundException;
-import com.example.information_systems_lab1.exeption.PersonNotFoundException;
-import com.example.information_systems_lab1.exeption.PersonValidationException;
+import com.example.information_systems_lab1.exception.InsufficientEditingRightsException;
+import com.example.information_systems_lab1.exception.MovieNotFoundException;
+import com.example.information_systems_lab1.exception.PersonNotFoundException;
+import com.example.information_systems_lab1.exception.PersonValidationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -23,7 +23,7 @@ public class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ResponseEntity<String> handleHttpMessageNotReadableException(HttpMessageNotReadableException ex) {
         //TODO logs
-        return new ResponseEntity<>("Invalid input: " + ex.getMessage(), HttpStatus.BAD_REQUEST);
+        return new ResponseEntity<>("Неверные данные: " + ex.getMessage(), HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -55,12 +55,14 @@ public class GlobalExceptionHandler {
     public String handlePersonValidationException(MovieNotFoundException ex) {
         return ex.getMessage();
     }
+
     @ExceptionHandler(PersonNotFoundException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
     public String handlePersonValidationException(PersonNotFoundException ex) {
         return ex.getMessage();
     }
-    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+
+    @ExceptionHandler(value = {MethodArgumentTypeMismatchException.class, IllegalArgumentException.class})
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public String handlePersonValidationException(MethodArgumentTypeMismatchException ex) {
         return ex.getMessage();

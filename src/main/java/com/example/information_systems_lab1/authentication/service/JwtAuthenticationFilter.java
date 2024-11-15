@@ -24,9 +24,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtService jwtService;
     private final UserServices userService;
 
+
     @Override
-    protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response,
-                                    @NonNull FilterChain filterChain) throws ServletException, IOException {
+    protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull FilterChain filterChain) throws ServletException, IOException {
 
         String authHeader = request.getHeader(HEADER_NAME);
 
@@ -35,17 +35,20 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
 
+        String requestUri = request.getRequestURI();
+        if (requestUri.equals("/login") || requestUri.equals("/register") || requestUri.equals("/")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         String jwt = authHeader.substring(BEARER_PREFIX.length());
         String username = jwtService.getNameFromJwt(jwt);
 
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            // Если токен валиден, выполняем аутентификацию
             if (jwtService.isTokenValid(jwt)) {
                 UserDetails userDetails = userService.userDetailsService().loadUserByUsername(username);
-                UsernamePasswordAuthenticationToken authToken =
-                        new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+                UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
                 authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-
                 SecurityContextHolder.getContext().setAuthentication(authToken);
             }
         }

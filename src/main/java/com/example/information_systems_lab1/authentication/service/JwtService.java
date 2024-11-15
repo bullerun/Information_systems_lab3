@@ -7,6 +7,7 @@ import io.jsonwebtoken.security.Keys;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
@@ -14,19 +15,15 @@ import javax.crypto.SecretKey;
 import java.util.Date;
 
 @Service
+@ConfigurationProperties(prefix = "app.jwt")
 public class JwtService {
-
-    private String jwtSigningKey = "verySecretKeyverySecretKeyverySecretKeyverySecretKeyverySecretKeyverySecretKeyverySecretKeyverySecretKeyverySecretKey"; //TODO
-
-    private long lifeTime = 10_000_000; //TODO
+    @Value("${secret}")
+    private String jwtSigningKey;
+    @Value("${lifetime}")
+    private long lifeTime;
 
     public String generateToken(UserDetails user) {
-        return Jwts.builder()
-                .subject(user.getUsername())
-                .issuedAt(new Date(System.currentTimeMillis()))
-                .expiration(new Date(System.currentTimeMillis() + lifeTime * 60 * 24))
-                .signWith(getSigningKey())
-                .compact();
+        return Jwts.builder().subject(user.getUsername()).issuedAt(new Date(System.currentTimeMillis())).expiration(new Date(System.currentTimeMillis() + lifeTime * 60 * 24)).signWith(getSigningKey()).compact();
     }
 
     public String getNameFromJwt(String token) {

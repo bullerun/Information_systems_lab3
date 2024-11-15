@@ -1,8 +1,8 @@
 package com.example.information_systems_lab1.controller;
 
 import com.example.information_systems_lab1.entity.Person;
-import com.example.information_systems_lab1.exeption.InsufficientEditingRightsException;
-import com.example.information_systems_lab1.exeption.PersonNotFoundException;
+import com.example.information_systems_lab1.exception.InsufficientEditingRightsException;
+import com.example.information_systems_lab1.exception.PersonNotFoundException;
 import com.example.information_systems_lab1.service.PersonService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

@@ -16,20 +16,13 @@ public class UserServices {
 
     private final UserRepository userRepository;
 
-    public User save(User user) {
-        return userRepository.save(user);
-    }
 
-    public User create(User user) {
+
+    public void create(User user) {
         if (userRepository.existsByUsername(user.getUsername())) {
-            // Заменить на свои исключения
             throw new RuntimeException("Пользователь с таким именем уже существует");
         }
-
-        if (userRepository.existsByEmail(user.getEmail())) {
-            throw new RuntimeException("Пользователь с таким email уже существует");
-        }
-        return save(user);
+        userRepository.save(user);
     }
 
     public User getByUsername(String username) {

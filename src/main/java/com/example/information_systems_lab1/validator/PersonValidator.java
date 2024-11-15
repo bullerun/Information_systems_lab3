@@ -1,7 +1,7 @@
 package com.example.information_systems_lab1.validator;
 
 import com.example.information_systems_lab1.entity.Person;
-import com.example.information_systems_lab1.exeption.PersonValidationException;
+import com.example.information_systems_lab1.exception.PersonValidationException;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
 import lombok.RequiredArgsConstructor;

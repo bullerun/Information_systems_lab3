@@ -3,7 +3,7 @@ package com.example.information_systems_lab1.service;
 import com.example.information_systems_lab1.authentication.service.UserServices;
 import com.example.information_systems_lab1.entity.Coordinates;
 import com.example.information_systems_lab1.entity.Movie;
-import com.example.information_systems_lab1.exeption.*;
+import com.example.information_systems_lab1.exception.*;
 import com.example.information_systems_lab1.repository.MovieRepository;
 import com.example.information_systems_lab1.request.MovieRequest;
 import lombok.RequiredArgsConstructor;
@@ -19,7 +19,7 @@ public class MovieService {
 
     @Transactional
     public void addMovie(MovieRequest movieRequest) throws OneStringException, PersonNotFoundException, PersonValidationException {
-//       // TODO сделать эксепшены чтобы было КРАСИВА
+       // TODO сделать эксепшены чтобы было КРАСИВА
         var userID = userService.getCurrentUserId();
         var direction = movieRequest.getDirector();
         if (direction == null) {
