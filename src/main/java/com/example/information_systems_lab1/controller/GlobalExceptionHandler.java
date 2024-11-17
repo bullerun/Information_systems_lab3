@@ -46,25 +46,41 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(InsufficientEditingRightsException.class)
     @ResponseStatus(HttpStatus.FORBIDDEN)
-    public String handlePersonValidationException(InsufficientEditingRightsException ex) {
-        return ex.getMessage();
+    public Map<String, String> handlePersonValidationException(InsufficientEditingRightsException ex) {
+        Map<String, String> m = new HashMap<>();
+        m.put("error", ex.getMessage());
+        return m;
     }
 
     @ExceptionHandler(MovieNotFoundException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
-    public String handlePersonValidationException(MovieNotFoundException ex) {
-        return ex.getMessage();
+    public Map<String, String> handlePersonValidationException(MovieNotFoundException ex) {
+        Map<String, String> m = new HashMap<>();
+        m.put("error", ex.getMessage());
+        return m;
     }
 
     @ExceptionHandler(PersonNotFoundException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
-    public String handlePersonValidationException(PersonNotFoundException ex) {
-        return ex.getMessage();
+    public Map<String, String> handlePersonValidationException(PersonNotFoundException ex) {
+        Map<String, String> m = new HashMap<>();
+        m.put("error", ex.getMessage());
+        return m;
     }
 
-    @ExceptionHandler(value = {MethodArgumentTypeMismatchException.class, IllegalArgumentException.class})
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public String handlePersonValidationException(MethodArgumentTypeMismatchException ex) {
-        return ex.getMessage();
+    public Map<String, String> handlePersonValidationException(MethodArgumentTypeMismatchException ex) {
+        Map<String, String> m = new HashMap<>();
+        m.put("error", ex.getMessage());
+        return m;
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public Map<String, String> badRequest(IllegalArgumentException ex) {
+        Map<String, String> m = new HashMap<>();
+        m.put("error", ex.getMessage());
+        return m;
     }
 }
