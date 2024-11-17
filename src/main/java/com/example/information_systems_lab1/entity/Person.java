@@ -4,12 +4,14 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 
 @Setter
 @Getter
 @Entity
+@Data
 public class Person {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -51,29 +53,4 @@ public class Person {
 
     @Column(name = "owner_id", nullable = false)
     private Long ownerId;
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        Person person = (Person) o;
-
-        if (Float.compare(weight, person.weight) != 0) return false;
-        if (!name.equals(person.name)) return false;
-        if (eyeColor != person.eyeColor) return false;
-        if (hairColor != person.hairColor) return false;
-        if (!location.equals(person.location)) return false;
-        return nationality == person.nationality;
-    }
-
-    @Override
-    public int hashCode() {
-        int result = name.hashCode();
-        result = 31 * result + eyeColor.hashCode();
-        result = 31 * result + hairColor.hashCode();
-        result = 31 * result + location.hashCode();
-        result = 31 * result + (weight != 0.0f ? Float.floatToIntBits(weight) : 0);
-        result = 31 * result + nationality.hashCode();
-        return result;
-    }
 }

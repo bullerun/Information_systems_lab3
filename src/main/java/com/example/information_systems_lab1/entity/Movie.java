@@ -9,11 +9,10 @@ import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
 
 @Builder
-@Getter
-@Setter
 @Entity
 @NoArgsConstructor
 @AllArgsConstructor
+@Data
 public class Movie {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
