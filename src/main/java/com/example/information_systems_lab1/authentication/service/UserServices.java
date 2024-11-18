@@ -18,20 +18,20 @@ public class UserServices {
     /**
      * Сохранение пользователя
      */
-    public void save(User user) {
-        repository.save(user);
+    public User save(User user) {
+        return repository.save(user);
     }
 
 
     /**
      * Создание пользователя
      */
-    public void create(User user) {
+    public User create(User user) {
         if (repository.existsByUsername(user.getUsername())) {
             // Заменить на свои исключения
             throw new RuntimeException("Пользователь с таким именем уже существует");
         }
-        save(user);
+        return save(user);
     }
 
     /**

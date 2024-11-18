@@ -26,11 +26,11 @@ public class AuthenticationService {
                 .username(request.getUsername())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .build();
-        userService.create(user);
+        user = userService.create(user);
 
         // Генерируем токен
         var jwt = jwtService.generateToken(user);
-        return new JwtAuthenticationResponse(jwt);
+        return new JwtAuthenticationResponse(user.getId(), user.getUsername(), jwt);
     }
 
     public JwtAuthenticationResponse signIn(SignInRequest request) {
@@ -45,12 +45,10 @@ public class AuthenticationService {
         }
 
         // Загружаем пользователя
-        var userDetails = userService
-                .userDetailsService()
-                .loadUserByUsername(request.getUsername());
+        var userDetails = userService.getByUsername(request.getUsername());
 
         // Генерируем токен
         var jwt = jwtService.generateToken(userDetails);
-        return new JwtAuthenticationResponse(jwt);
+        return new JwtAuthenticationResponse(userDetails.getId(), userDetails.getUsername(), jwt);
     }
 }

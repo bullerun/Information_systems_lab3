@@ -41,7 +41,7 @@ dependencies {
     // из-за того что этого не было не валидировалось..., что это хз, почему я везде использую jakarta для валидации, но тут мне нужен спринг, чтобы все работало, как это взаимосвязано
     // где инкапсуляция??????????
     implementation 'org.springframework.boot:spring-boot-starter-validation:3.3.3'
-
+    implementation("org.springframework.boot:spring-boot-starter-websocket")
     compileOnly 'org.projectlombok:lombok'
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
     annotationProcessor 'org.projectlombok:lombok'
