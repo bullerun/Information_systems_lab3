@@ -84,4 +84,10 @@ public class GlobalExceptionHandler {
         m.put("error", ex.getMessage());
         return m;
     }
+
+    @ExceptionHandler(Exception.class)
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    public String internalServerError(Exception ex) {
+        return "Непредвиденная ошибка";
+    }
 }

@@ -93,7 +93,7 @@ public class PersonService {
         dto.setWeight(person.getWeight());
         dto.setNationality(person.getNationality());
         dto.setLocation(person.getLocation());
-        dto.setOwner_id(person.getOwner().getId());
+        dto.setOwner_id(person.getOwnerId());
         return dto;
     }
 }

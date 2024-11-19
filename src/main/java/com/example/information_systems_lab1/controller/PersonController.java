@@ -27,8 +27,8 @@ public class PersonController {
         personService.addPerson(person);
     }
 
-    @PatchMapping("/edit/{id}")
-    public ResponseEntity<?> updatePerson(@PathVariable("id") Long id, @RequestBody Person updatedPerson) throws InsufficientEditingRightsException {
+    @PatchMapping("/edit")
+    public ResponseEntity<?> updatePerson(@RequestParam Long id, @Valid @RequestBody Person updatedPerson) throws InsufficientEditingRightsException {
         try {
             personService.update(id, updatedPerson);
             return ResponseEntity.ok().build();

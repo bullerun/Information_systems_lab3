@@ -20,34 +20,19 @@ public class AuthenticationService {
     private final AuthenticationManager authenticationManager;
 
     public JwtAuthenticationResponse signUp(SignUpRequest request) throws IllegalArgumentException {
-
-        // Создаем нового пользователя
-        var user = User.builder()
-                .username(request.getUsername())
-                .password(passwordEncoder.encode(request.getPassword()))
-                .build();
+        var user = User.builder().username(request.getUsername()).password(passwordEncoder.encode(request.getPassword())).build();
         user = userService.create(user);
-
-        // Генерируем токен
         var jwt = jwtService.generateToken(user);
         return new JwtAuthenticationResponse(user.getId(), user.getUsername(), jwt);
     }
 
     public JwtAuthenticationResponse signIn(SignInRequest request) {
-        // Аутентификация пользователя
         try {
-            authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(
-                    request.getUsername(),
-                    request.getPassword()
-            ));
+            authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword()));
         } catch (Exception e) {
             throw new IllegalArgumentException("Invalid username or password.");
         }
-
-        // Загружаем пользователя
         var userDetails = userService.getByUsername(request.getUsername());
-
-        // Генерируем токен
         var jwt = jwtService.generateToken(userDetails);
         return new JwtAuthenticationResponse(userDetails.getId(), userDetails.getUsername(), jwt);
     }
