@@ -19,10 +19,7 @@ public class Coordinates {
     @DecimalMin(value = "-737.0", inclusive = false, message = "Значение x должно быть больше -737")
     private double x;
 
-
     @NotNull(message = "Поле y не может быть null")
     @Max(value = 870, message = "Значение y должно быть меньше 870")
     private Long y;
-
-
 }

@@ -1,9 +1,6 @@
 package com.example.information_systems_lab1.controller;
 
-import com.example.information_systems_lab1.exception.InsufficientEditingRightsException;
-import com.example.information_systems_lab1.exception.MovieNotFoundException;
-import com.example.information_systems_lab1.exception.PersonNotFoundException;
-import com.example.information_systems_lab1.exception.PersonValidationException;
+import com.example.information_systems_lab1.exception.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -25,6 +22,13 @@ public class GlobalExceptionHandler {
     public ResponseEntity<String> handleHttpMessageNotReadableException(HttpMessageNotReadableException ex) {
         //TODO logs
         return new ResponseEntity<>("Неверные данные: " + ex.getMessage(), HttpStatus.BAD_REQUEST);
+    }
+
+
+    @ExceptionHandler(PersistentException.class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    public ResponseEntity<String> handlePersistentException(PersistentException ex) {
+        return new ResponseEntity<>(ex.getMessage(), HttpStatus.FORBIDDEN);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -61,9 +65,9 @@ public class GlobalExceptionHandler {
         return m;
     }
 
-    @ExceptionHandler(PersonNotFoundException.class)
+    @ExceptionHandler(NotFoundException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
-    public Map<String, String> handlePersonValidationException(PersonNotFoundException ex) {
+    public Map<String, String> handlePersonValidationException(NotFoundException ex) {
         Map<String, String> m = new HashMap<>();
         m.put("error", ex.getMessage());
         return m;

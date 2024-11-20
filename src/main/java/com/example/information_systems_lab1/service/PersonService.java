@@ -4,20 +4,26 @@ import com.example.information_systems_lab1.authentication.service.UserServices;
 import com.example.information_systems_lab1.dto.PersonDTO;
 import com.example.information_systems_lab1.entity.Location;
 import com.example.information_systems_lab1.entity.Person;
+import com.example.information_systems_lab1.entity.Role;
+import com.example.information_systems_lab1.entity.User;
 import com.example.information_systems_lab1.exception.InsufficientEditingRightsException;
-import com.example.information_systems_lab1.exception.PersonNotFoundException;
+import com.example.information_systems_lab1.exception.NotFoundException;
+import com.example.information_systems_lab1.exception.PersistentException;
 import com.example.information_systems_lab1.exception.PersonValidationException;
 import com.example.information_systems_lab1.repository.PersonRepository;
+import com.example.information_systems_lab1.repository.UserRepository;
 import com.example.information_systems_lab1.validator.PersonValidator;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -25,12 +31,13 @@ public class PersonService {
     private final PersonRepository personRepository;
     private final PersonValidator personValidator;
     private final UserServices userService;
+    private final UserRepository userRepository;
 
-    public Person getPersonById(Long id) throws PersonNotFoundException {
-        return personRepository.findById(id).orElseThrow(() -> new PersonNotFoundException("презираю жабу"));
+    public Person getPersonById(Long id) throws NotFoundException {
+        return personRepository.findById(id).orElseThrow(() -> new NotFoundException("презираю жабу"));
     }
 
-    @Transactional
+
     public void addPerson(Person person) {
         person.setOwnerId(userService.getCurrentUserId());
         personRepository.save(person);
@@ -40,7 +47,7 @@ public class PersonService {
         personValidator.validatePerson(direction, screenwriter, operator);
     }
 
-    public void update(Long id, Person personRequest) throws PersonNotFoundException, InsufficientEditingRightsException {
+    public void update(Long id, Person personRequest) throws NotFoundException, InsufficientEditingRightsException {
         Person person = getPersonById(id);
         updatePerson(person, personRequest, "person");
         personRepository.save(person);
@@ -84,7 +91,7 @@ public class PersonService {
         return dtos;
     }
 
-    private PersonDTO toPersonDTO(Person person) {
+    public PersonDTO toPersonDTO(Person person) {
         var dto = new PersonDTO();
         dto.setId(person.getId());
         dto.setName(person.getName());
@@ -96,4 +103,20 @@ public class PersonService {
         dto.setOwner_id(person.getOwnerId());
         return dto;
     }
+
+    @Transactional
+    public void deletePerson(Long id, String username) throws NotFoundException {
+        User user = userRepository.findByUsername(username).orElseThrow(() -> new NotFoundException("пользователь не найдет"));
+        try {
+            personRepository.deleteByIdAndOwnerIdIs(id, user.getId());
+        } catch (DataIntegrityViolationException ex) {
+            throw new PersistentException("Удаление невозможно: запись связана с другими объектами.");
+        }
+        if (Objects.equals(Role.ADMIN, user.getRole())) {
+            personRepository.deleteById(id);
+        } else {
+            personRepository.deleteByIdAndOwnerIdIs(id, user.getId());
+        }
+    }
+
 }

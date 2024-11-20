@@ -16,4 +16,8 @@ public interface PersonRepository extends JpaRepository<Person, Long> {
     @NotNull
     Page<Person> findAll(@NotNull Pageable pageable);
 
+
+
+    void deleteByIdAndOwnerIdIs(Long id, Long ownerId);
+    void deleteById(@NotNull Long id);
 }
