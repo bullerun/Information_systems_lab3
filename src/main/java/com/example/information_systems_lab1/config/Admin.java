@@ -20,8 +20,8 @@ public class Admin {
     @Value("${ADMIN_PASSWORD}")
     private String adminPassword;
 
-    private final UserRepository userRepository; // Заменено на final
-    private final PasswordEncoder passwordEncoder; // Заменено на final
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @EventListener(ApplicationReadyEvent.class)
     public void runAfterStartup() {
