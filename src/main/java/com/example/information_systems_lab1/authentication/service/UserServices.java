@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class UserServices {
     private final UserRepository repository;
+    private final UserRepository userRepository;
 
     public User save(User user) {
         return repository.save(user);
@@ -45,9 +46,9 @@ public class UserServices {
     public Long getCurrentUserId() {
         return getByUsername(SecurityContextHolder.getContext().getAuthentication().getName()).getId();
     }
-    public void setAdmin() {
-        var user = getCurrentUser();
-        user.setRole(Role.ADMIN);
-        save(user);
+
+    public void setAdmin(Long id) {
+        userRepository.updateUserRoleToAdmin(id, Role.ROLE_ADMIN);
     }
+
 }

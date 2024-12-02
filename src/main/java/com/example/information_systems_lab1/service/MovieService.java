@@ -4,6 +4,7 @@ import com.example.information_systems_lab1.authentication.service.UserServices;
 import com.example.information_systems_lab1.dto.MovieDTO;
 import com.example.information_systems_lab1.entity.Coordinates;
 import com.example.information_systems_lab1.entity.Movie;
+import com.example.information_systems_lab1.entity.MovieGenre;
 import com.example.information_systems_lab1.exception.*;
 import com.example.information_systems_lab1.repository.MovieRepository;
 import com.example.information_systems_lab1.request.MovieRequest;
@@ -26,7 +27,7 @@ public class MovieService {
 
     @Transactional
     public void addMovie(MovieRequest movieRequest) throws NotFoundException, PersonValidationException {
-       // TODO сделать эксепшены чтобы было КРАСИВА
+        // TODO сделать эксепшены чтобы было КРАСИВА
         var userID = userService.getCurrentUserId();
         var direction = movieRequest.getDirector();
         if (direction == null) {
@@ -126,7 +127,11 @@ public class MovieService {
         Page<Movie> a = movieRepository.findAll(PageRequest.of(page, pageSize, Sort.by(Sort.Direction.fromString(sortDirection), sortProperty)));
         return toMovieDTO(a.getContent());
     }
-
+    // TODO удалить
+    public List<MovieDTO> getAllByGenre(){
+        var a = movieRepository.findMoviesByGenre(MovieGenre.COMEDY, 13L);
+        return toMovieDTO(a);
+    }
     private List<MovieDTO> toMovieDTO(List<Movie> content) {
         List<MovieDTO> dtos = new ArrayList<>();
         for (Movie movie : content) {
@@ -134,6 +139,7 @@ public class MovieService {
         }
         return dtos;
     }
+
     private MovieDTO toMovieDTO(Movie movie) {
         MovieDTO dto = new MovieDTO();
         dto.setId(movie.getId());

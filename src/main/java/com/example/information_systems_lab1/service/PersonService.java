@@ -112,7 +112,7 @@ public class PersonService {
         } catch (DataIntegrityViolationException ex) {
             throw new PersistentException("Удаление невозможно: запись связана с другими объектами.");
         }
-        if (Objects.equals(Role.ADMIN, user.getRole())) {
+        if (Objects.equals(Role.ROLE_ADMIN, user.getRole())) {
             personRepository.deleteById(id);
         } else {
             personRepository.deleteByIdAndOwnerIdIs(id, user.getId());

@@ -1,6 +1,7 @@
 package com.example.information_systems_lab1.config;
 
 
+
 import io.github.cdimascio.dotenv.Dotenv;
 import jakarta.persistence.EntityManagerFactory;
 import org.springframework.context.annotation.Bean;
@@ -18,6 +19,7 @@ import java.util.Map;
         "com.example.information_systems_lab1.repository"
 )
 public class JpaConfig {
+
 
     @Bean
     public LocalContainerEntityManagerFactoryBean entityManagerFactory() {
@@ -51,4 +53,5 @@ public class JpaConfig {
     public PlatformTransactionManager transactionManager(EntityManagerFactory emf) {
         return new JpaTransactionManager(emf);
     }
+
 }

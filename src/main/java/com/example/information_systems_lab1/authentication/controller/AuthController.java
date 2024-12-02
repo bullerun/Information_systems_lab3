@@ -16,7 +16,6 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/auth")
 public class AuthController {
     private final AuthenticationService authenticationService;
-    private final UserServices service;
 
     @PostMapping("/register")
     public JwtAuthenticationResponse signUp(@Valid @RequestBody SignUpRequest sign) throws IllegalArgumentException {
@@ -28,14 +27,4 @@ public class AuthController {
         return authenticationService.signIn(sign);
     }
 
-    @GetMapping("/admin")
-    @PreAuthorize("hasRole('ADMIN')")
-    public String exampleAdmin() {
-        return "Hello, admin!";
-    }
-
-    @GetMapping("/set-admin")
-    public void setAdmin() {
-        service.setAdmin();
-    }
 }

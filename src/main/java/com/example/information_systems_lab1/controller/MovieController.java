@@ -1,10 +1,8 @@
 package com.example.information_systems_lab1.controller;
 
 import com.example.information_systems_lab1.dto.MovieDTO;
-import com.example.information_systems_lab1.exception.InsufficientEditingRightsException;
-import com.example.information_systems_lab1.exception.MovieNotFoundException;
-import com.example.information_systems_lab1.exception.OneStringException;
-import com.example.information_systems_lab1.exception.NotFoundException;
+import com.example.information_systems_lab1.entity.MovieGenre;
+import com.example.information_systems_lab1.exception.*;
 import com.example.information_systems_lab1.request.MovieRequest;
 import com.example.information_systems_lab1.service.MovieService;
 import jakarta.validation.Valid;
@@ -24,12 +22,12 @@ public class MovieController {
 
     @ResponseStatus(HttpStatus.CREATED)
     @PostMapping("/add")
-    public void addMovie(@Valid @RequestBody MovieRequest movie) throws Exception {
+    public void addMovie(@RequestBody MovieRequest movie) throws PersonValidationException, NotFoundException {
         movieService.addMovie(movie);
     }
 
     @PatchMapping("/edit/{id}")
-    public ResponseEntity<?> updateMovie(@PathVariable("id") Long id, @RequestBody MovieRequest updatedMovie) throws OneStringException, InsufficientEditingRightsException, NotFoundException, MovieNotFoundException {
+    public ResponseEntity<?> updateMovie(@PathVariable("id") Long id, @RequestBody MovieRequest updatedMovie) throws InsufficientEditingRightsException, NotFoundException, MovieNotFoundException {
         movieService.update(id, updatedMovie);
         return new ResponseEntity<>(HttpStatus.OK);
     }
@@ -43,5 +41,9 @@ public class MovieController {
     ) {
         sortProperty = sortProperty != null ? sortProperty : "id";
         return movieService.getAllMovies(page, pageSize, sortDirection, sortProperty);
+    }
+    @GetMapping("/genre")
+    public List<MovieDTO> getAllGenres(){
+        return movieService.getAllByGenre();
     }
 }
