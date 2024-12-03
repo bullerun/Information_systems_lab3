@@ -102,14 +102,21 @@ public class MovieService {
         } else if (updatedMovie.getDirector() != null) {
             personService.updatePerson(movie.getDirector(), updatedMovie.getDirector(), "direction");
         }
+
         if (updatedMovie.getScreenwriter_id() != null) {
             movie.setScreenwriter(personService.getPersonById(updatedMovie.getScreenwriter_id()));
+
         } else if (movie.getScreenwriter() == null) {
             movie.setScreenwriter(updatedMovie.getScreenwriter());
             movie.getScreenwriter().setOwnerId(userService.getCurrentUserId());
+
         } else if (updatedMovie.getScreenwriter() != null) {
             personService.updatePerson(movie.getScreenwriter(), updatedMovie.getScreenwriter(), "screenwriter");
+        } else {
+            movie.setScreenwriter(null);
         }
+
+
         if (updatedMovie.getOperator_id() != null) {
             movie.setOperator(personService.getPersonById(updatedMovie.getOperator_id()));
         } else if (updatedMovie.getOperator() != null) {
@@ -127,11 +134,13 @@ public class MovieService {
         Page<Movie> a = movieRepository.findAll(PageRequest.of(page, pageSize, Sort.by(Sort.Direction.fromString(sortDirection), sortProperty)));
         return toMovieDTO(a.getContent());
     }
+
     // TODO удалить
-    public List<MovieDTO> getAllByGenre(){
+    public List<MovieDTO> getAllByGenre() {
         var a = movieRepository.findMoviesByGenre(MovieGenre.COMEDY, 13L);
         return toMovieDTO(a);
     }
+
     private List<MovieDTO> toMovieDTO(List<Movie> content) {
         List<MovieDTO> dtos = new ArrayList<>();
         for (Movie movie : content) {
@@ -161,5 +170,8 @@ public class MovieService {
         dto.setOwner_id(movie.getOwnerId());
         return dto;
     }
-
+//TODO сделать проверку на то что пользователь имеет права
+    public void deleteMovie(Long id) {
+        movieRepository.deleteById(id);
+    }
 }

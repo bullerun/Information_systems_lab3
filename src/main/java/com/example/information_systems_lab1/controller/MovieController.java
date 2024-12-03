@@ -46,4 +46,9 @@ public class MovieController {
     public List<MovieDTO> getAllGenres(){
         return movieService.getAllByGenre();
     }
+
+    @DeleteMapping
+    public void deleteMovie(@RequestParam Long id) throws NotFoundException {
+        movieService.deleteMovie(id);
+    }
 }

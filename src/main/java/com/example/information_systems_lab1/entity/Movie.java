@@ -48,17 +48,17 @@ public class Movie {
     private MpaaRating mpaaRating; //Поле не может быть null
 
     @NotNull(message = "Поле director не может быть null")
-    @ManyToOne(cascade = CascadeType.ALL)
+    @ManyToOne(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @JoinColumn(name = "director_id", nullable = false)
     private Person director; //Поле не может быть null
 
 
-    @ManyToOne(cascade = CascadeType.ALL)
+    @ManyToOne(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @JoinColumn(name = "screenwriter_id")
     private Person screenwriter;
 
     @NotNull(message = "Поле operator не может быть null")
-    @ManyToOne(cascade = CascadeType.ALL)
+    @ManyToOne(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @JoinColumn(name = "operator_id", nullable = false)
     private Person operator; //Поле не может быть null
 
