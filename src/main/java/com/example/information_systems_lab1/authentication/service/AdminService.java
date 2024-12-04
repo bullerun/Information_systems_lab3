@@ -26,10 +26,10 @@ public class AdminService {
     @Transactional
     public void setAdmin(Long id) {
         userServices.setAdmin(id);
-        adminQueueRepository.deleteById(id);
+        adminQueueRepository.deleteByOwnerId(id);
     }
     @Transactional
     public void reject(Long id) {
-        adminQueueRepository.deleteById(id);
+        adminQueueRepository.deleteByOwnerId(id);
     }
 }

@@ -23,7 +23,7 @@ public class AuthenticationService {
         var user = User.builder().username(request.getUsername()).password(passwordEncoder.encode(request.getPassword())).build();
         user = userService.create(user);
         var jwt = jwtService.generateToken(user);
-        return new JwtAuthenticationResponse(user.getId(), user.getUsername(), jwt);
+        return new JwtAuthenticationResponse(user.getId(), user.getUsername(), jwt, user.getRole());
     }
 
     public JwtAuthenticationResponse signIn(SignInRequest request) {
@@ -34,6 +34,6 @@ public class AuthenticationService {
         }
         var userDetails = userService.getByUsername(request.getUsername());
         var jwt = jwtService.generateToken(userDetails);
-        return new JwtAuthenticationResponse(userDetails.getId(), userDetails.getUsername(), jwt);
+        return new JwtAuthenticationResponse(userDetails.getId(), userDetails.getUsername(), jwt, userDetails.getRole());
     }
 }

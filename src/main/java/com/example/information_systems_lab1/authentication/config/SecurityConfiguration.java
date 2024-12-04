@@ -50,6 +50,7 @@ public class SecurityConfiguration {
                         .requestMatchers("/person").permitAll()
                         .requestMatchers("/movie").permitAll()
                         .requestMatchers("/swagger-ui/**", "/swagger-resources/*", "/v3/api-docs/**").permitAll()
+                        .requestMatchers("admin/addToQueue").permitAll()
                         .anyRequest().authenticated())
                 .sessionManagement(manager -> manager.sessionCreationPolicy(STATELESS))
                 .authenticationProvider(authenticationProvider())

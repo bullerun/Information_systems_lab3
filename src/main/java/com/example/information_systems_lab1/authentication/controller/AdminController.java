@@ -1,9 +1,6 @@
 package com.example.information_systems_lab1.authentication.controller;
 
-import com.example.information_systems_lab1.authentication.requsts.AddToAdminQueueRequest;
 import com.example.information_systems_lab1.authentication.service.AdminService;
-import com.example.information_systems_lab1.authentication.service.UserServices;
-import com.example.information_systems_lab1.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,8 +15,8 @@ public class AdminController {
 
 
     @PostMapping("/addToQueue")
-    public ResponseEntity<?> addAdminToAdminQueue(@RequestBody AddToAdminQueueRequest id) {
-        adminService.add(id.getId());
+    public ResponseEntity<?> addAdminToAdminQueue(@RequestParam Long id) {
+        adminService.add(id);
         return new ResponseEntity<>(HttpStatus.CREATED);
     }
 
@@ -31,14 +28,15 @@ public class AdminController {
 
     @PostMapping("/set")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> setAdmin(@RequestBody AddToAdminQueueRequest id) {
-        adminService.setAdmin(id.getId());
+    public ResponseEntity<?> setAdmin(@RequestParam Long id) {
+        adminService.setAdmin(id);
         return new ResponseEntity<>(HttpStatus.CREATED);
     }
+
     @PostMapping("/reject")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> rejectAdmin(@RequestBody AddToAdminQueueRequest id) {
-        adminService.reject(id.getId());
+    public ResponseEntity<?> rejectAdmin(@RequestParam Long id) {
+        adminService.reject(id);
         return new ResponseEntity<>(HttpStatus.CREATED);
     }
 }

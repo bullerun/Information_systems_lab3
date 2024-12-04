@@ -1,11 +1,9 @@
 package com.example.information_systems_lab1.controller;
 
 import com.example.information_systems_lab1.dto.MovieDTO;
-import com.example.information_systems_lab1.entity.MovieGenre;
 import com.example.information_systems_lab1.exception.*;
 import com.example.information_systems_lab1.request.MovieRequest;
 import com.example.information_systems_lab1.service.MovieService;
-import jakarta.validation.Valid;
 import jakarta.validation.constraints.Pattern;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -42,13 +40,9 @@ public class MovieController {
         sortProperty = sortProperty != null ? sortProperty : "id";
         return movieService.getAllMovies(page, pageSize, sortDirection, sortProperty);
     }
-    @GetMapping("/genre")
-    public List<MovieDTO> getAllGenres(){
-        return movieService.getAllByGenre();
-    }
 
     @DeleteMapping
-    public void deleteMovie(@RequestParam Long id) throws NotFoundException {
+    public void deleteMovie(@RequestParam Long id) {
         movieService.deleteMovie(id);
     }
 }
