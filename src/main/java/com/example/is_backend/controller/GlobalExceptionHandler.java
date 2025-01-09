@@ -44,6 +44,11 @@ public class GlobalExceptionHandler {
         });
         return errors;
     }
+    @ExceptionHandler(CustomException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public Map<String, String> handleValidationExceptions(CustomException ex) {
+        return ex.getExceptions();
+    }
 
     @ExceptionHandler(PersonValidationException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)

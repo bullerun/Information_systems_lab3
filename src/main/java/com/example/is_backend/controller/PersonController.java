@@ -1,10 +1,12 @@
 package com.example.is_backend.controller;
 
 import com.example.is_backend.dto.PersonDTO;
+import com.example.is_backend.entity.Movie;
 import com.example.is_backend.entity.Person;
 import com.example.is_backend.exception.InsufficientEditingRightsException;
 import com.example.is_backend.exception.NotFoundException;
 import com.example.is_backend.exception.PersistentException;
+import com.example.is_backend.service.FileProcessingService;
 import com.example.is_backend.service.PersonService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import jakarta.validation.Valid;
@@ -13,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.security.Principal;
 import java.util.List;
@@ -23,7 +26,7 @@ import java.util.List;
 @RequestMapping("/person")
 public class PersonController {
     private final PersonService personService;
-
+    private final FileProcessingService fileProcessingService;
 
     @PostMapping("/add")
     @ResponseStatus(HttpStatus.CREATED)
@@ -56,4 +59,17 @@ public class PersonController {
         }
     }
 
+    @PostMapping("/upload")
+    public ResponseEntity<?> uploadFiles(@RequestParam("file") MultipartFile file) {
+        try {
+            String contentType = file.getContentType();
+            if (contentType != null && !contentType.equals("application/json") && !contentType.equals("application/zip")) {
+                return ResponseEntity.badRequest().body("Only JSON and ZIP files are allowed.");
+            }
+            fileProcessingService.processFile(file, Person.class);
+            return ResponseEntity.ok("File uploaded successfully.");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error processing the file: " + e.getMessage());
+        }
+    }
 }

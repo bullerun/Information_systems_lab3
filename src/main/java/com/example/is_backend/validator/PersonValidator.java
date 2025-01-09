@@ -1,6 +1,7 @@
 package com.example.is_backend.validator;
 
 import com.example.is_backend.entity.Person;
+import com.example.is_backend.exception.CustomException;
 import com.example.is_backend.exception.PersonValidationException;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
@@ -16,15 +17,31 @@ import java.util.Set;
 public class PersonValidator {
     private final Validator validator;
 
+    public void validatePerson(Person person) {
+        Set<ConstraintViolation<Person>> violations = validator.validate(person);
+        var errors = new HashMap<String, String>();
+        if (!violations.isEmpty()) {
+            for (ConstraintViolation<Person> violation : violations) {
+                String fieldName = violation.getPropertyPath().toString();
+                String errorMessage = violation.getMessage();
+                errors.put(fieldName, errorMessage);
+            }
+        }
+        if (!errors.isEmpty()) {
+            throw new CustomException(errors);
+        }
+    }
 
-    public void validatePerson(Person direction, Person screenwriter, Person operator) throws PersonValidationException {
+    public void validateDirectorScreenwriterOperator(Person direction, Person screenwriter, Person operator) throws PersonValidationException {
         Map<String, Map<String, String>> errors = new HashMap<>();
         checkAndAddErrors(direction, "direction", errors);
         if (screenwriter != null) {
             checkAndAddErrors(screenwriter, "screenwriter", errors);
         }
         checkAndAddErrors(operator, "operator", errors);
-        if (!errors.isEmpty()) throw new PersonValidationException(errors);
+        if (!errors.isEmpty()) {
+            throw new PersonValidationException(errors);
+        }
     }
 
     public void checkAndAddErrors(Person person, String str, Map<String, Map<String, String>> errors) {

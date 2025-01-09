@@ -42,8 +42,12 @@ public class PersonService {
         personRepository.save(person);
     }
 
+    public void validatePerson(Person person) {
+        personValidator.validatePerson(person);
+    }
+
     public void validateDirectionScreenwriterOperator(Person direction, Person screenwriter, Person operator) throws PersonValidationException {
-        personValidator.validatePerson(direction, screenwriter, operator);
+        personValidator.validateDirectorScreenwriterOperator(direction, screenwriter, operator);
     }
 
     public void update(Long id, Person updatedPerson) throws NotFoundException, InsufficientEditingRightsException {
