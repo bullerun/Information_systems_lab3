@@ -18,16 +18,32 @@ public class AdminService {
     public List<AdminQueue> getAllAdminQueues() {
         return adminQueueRepository.findAllWithStatusPending(StatusInAdminQueue.PENDING);
     }
+
     public void add(Long id) {
         AdminQueue newAdminQueue = new AdminQueue();
         newAdminQueue.setOwnerId(id);
         adminQueueRepository.save(newAdminQueue);
     }
-    @Transactional
-    public void setAdmin(Long id) {
-        userServices.setAdmin(id);
-        adminQueueRepository.deleteByOwnerId(id);
+
+    public synchronized void setAdmin(Long id) {
+        try {
+            userServices.setAdmin(id);
+            if (id == 5){
+                throw new Exception("hehe");
+            }
+        }catch (Exception e){
+            return;
+        }
+        try {
+            adminQueueRepository.deleteByOwnerId(id);
+        }catch (Exception e){
+            userServices.removeAdmin(id);
+            return;
+        }
+        System.out.println(id);
     }
+
+
     @Transactional
     public void reject(Long id) {
         adminQueueRepository.deleteByOwnerId(id);

@@ -1,7 +1,6 @@
 package com.example.information_systems_lab1.config;
 
 
-
 import io.github.cdimascio.dotenv.Dotenv;
 import jakarta.persistence.EntityManagerFactory;
 import org.springframework.context.annotation.Bean;
@@ -15,9 +14,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Configuration
-@EnableJpaRepositories(basePackages =
-        "com.example.information_systems_lab1.repository"
-)
+@EnableJpaRepositories(basePackages = "com.example.information_systems_lab1.repository")
 public class JpaConfig {
 
 
@@ -43,7 +40,6 @@ public class JpaConfig {
         properties.put("eclipselink.logging.level", "ALL");
         properties.put("eclipselink.ddl-generation", "create-or-extend-tables");
         properties.put("eclipselink.weaving", "false");
-
         em.setJpaPropertyMap(properties);
         return em;
     }

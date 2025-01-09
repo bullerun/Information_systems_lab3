@@ -14,7 +14,6 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class UserServices {
     private final UserRepository repository;
-    private final UserRepository userRepository;
 
     public User save(User user) {
         return repository.save(user);
@@ -48,7 +47,10 @@ public class UserServices {
     }
 
     public void setAdmin(Long id) {
-        userRepository.updateUserRoleToAdmin(id, Role.ROLE_ADMIN);
+        repository.updateRole(id, Role.ROLE_ADMIN);
     }
 
+    public void removeAdmin(Long id) {
+        repository.updateRole(id, Role.ROLE_USER);
+    }
 }

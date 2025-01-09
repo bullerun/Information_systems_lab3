@@ -1,10 +1,10 @@
 package com.example.information_systems_lab1.service;
 
 import com.example.information_systems_lab1.authentication.service.UserServices;
+import com.example.information_systems_lab1.controller.WebSocketController;
 import com.example.information_systems_lab1.dto.PersonDTO;
 import com.example.information_systems_lab1.entity.Location;
 import com.example.information_systems_lab1.entity.Person;
-import com.example.information_systems_lab1.entity.Role;
 import com.example.information_systems_lab1.entity.User;
 import com.example.information_systems_lab1.exception.InsufficientEditingRightsException;
 import com.example.information_systems_lab1.exception.NotFoundException;
@@ -13,9 +13,9 @@ import com.example.information_systems_lab1.exception.PersonValidationException;
 import com.example.information_systems_lab1.repository.PersonRepository;
 import com.example.information_systems_lab1.repository.UserRepository;
 import com.example.information_systems_lab1.validator.PersonValidator;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -23,7 +23,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -32,6 +31,7 @@ public class PersonService {
     private final PersonValidator personValidator;
     private final UserServices userService;
     private final UserRepository userRepository;
+    private final WebSocketController webSocketController;
 
     public Person getPersonById(Long id) throws NotFoundException {
         return personRepository.findById(id).orElseThrow(() -> new NotFoundException("презираю жабу"));
@@ -47,10 +47,12 @@ public class PersonService {
         personValidator.validatePerson(direction, screenwriter, operator);
     }
 
-    public void update(Long id, Person personRequest) throws NotFoundException, InsufficientEditingRightsException {
+    public void update(Long id, Person updatedPerson) throws NotFoundException, InsufficientEditingRightsException {
         Person person = getPersonById(id);
-        updatePerson(person, personRequest, "person");
+        updatePerson(person, updatedPerson, "person");
         personRepository.save(person);
+        webSocketController.updatePerson(person);
+
     }
 
     public void updatePerson(Person person, Person personRequest, String s) throws InsufficientEditingRightsException {
@@ -109,14 +111,11 @@ public class PersonService {
         User user = userRepository.findByUsername(username).orElseThrow(() -> new NotFoundException("пользователь не найдет"));
         try {
             personRepository.deleteByIdAndOwnerIdIs(id, user.getId());
-        } catch (DataIntegrityViolationException ex) {
+            webSocketController.deletePerson(id);
+        } catch (Exception ex) {
             throw new PersistentException("Удаление невозможно: запись связана с другими объектами.");
         }
-        if (Objects.equals(Role.ROLE_ADMIN, user.getRole())) {
-            personRepository.deleteById(id);
-        } else {
-            personRepository.deleteByIdAndOwnerIdIs(id, user.getId());
-        }
+
     }
 
 }

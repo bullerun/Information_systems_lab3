@@ -27,8 +27,10 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(PersistentException.class)
     @ResponseStatus(HttpStatus.FORBIDDEN)
-    public ResponseEntity<String> handlePersistentException(PersistentException ex) {
-        return new ResponseEntity<>(ex.getMessage(), HttpStatus.FORBIDDEN);
+    public Map<String, String> handlePersistentException(PersistentException ex) {
+        Map<String, String> m = new HashMap<>();
+        m.put("error", "А он занять НЕ ТРОГАТЬ");
+        return m;
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
