@@ -21,11 +21,14 @@ public class JsonService {
     }
 
     public <T> void validateEntities(List<T> entities, Class<T> clazz) {
+        var persons = new ArrayList<Person>();
         if (clazz == Person.class) {
             for (T entity : entities) {
                 personService.validatePerson((Person) entity);
+                persons.add((Person) entity);
             }
         }
+        personService.addPersons(persons);
     }
 
     public <T> void parseJsons(ArrayList<String> jsonArr, Class<T> clazz) throws IOException {

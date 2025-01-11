@@ -19,8 +19,7 @@ public class FileProcessingService {
 
         if (contentType.equals("application/json")) {
             processJsonFile(file, clazz);
-        } else if (contentType.equals("application/zip")) {
-
+        } else if (contentType.equals("application/x-zip-compressed")) {
             processZipFile(file, clazz);
         }
     }

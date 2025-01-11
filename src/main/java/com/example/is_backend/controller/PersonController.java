@@ -19,6 +19,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.security.Principal;
 import java.util.List;
+import java.util.Map;
 
 
 @RestController
@@ -60,14 +61,14 @@ public class PersonController {
     }
 
     @PostMapping("/upload")
-    public ResponseEntity<?> uploadFiles(@RequestParam("file") MultipartFile file) {
+    public ResponseEntity<?> uploadFiles(MultipartFile file) {
         try {
             String contentType = file.getContentType();
-            if (contentType != null && !contentType.equals("application/json") && !contentType.equals("application/zip")) {
+            if (contentType != null && !contentType.equals("application/json") && !contentType.equals("application/x-zip-compressed")) {
                 return ResponseEntity.badRequest().body("Only JSON and ZIP files are allowed.");
             }
             fileProcessingService.processFile(file, Person.class);
-            return ResponseEntity.ok("File uploaded successfully.");
+            return ResponseEntity.ok().body(Map.of("message", "File uploaded successfully!"));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error processing the file: " + e.getMessage());
         }

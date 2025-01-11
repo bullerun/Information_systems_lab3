@@ -121,4 +121,11 @@ public class PersonService {
 
     }
 
+    public void addPersons(List<Person> persons) {
+        var id = userService.getCurrentUserId();
+        for (Person person : persons) {
+            person.setOwnerId(id);
+        }
+        personRepository.saveAll(persons);
+    }
 }

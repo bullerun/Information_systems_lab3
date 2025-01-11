@@ -14,14 +14,12 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class Admin {
 
-    @Value("${ADMIN_USERNAME}")
-    private String adminUsername;
-
-    @Value("${ADMIN_PASSWORD}")
-    private String adminPassword;
-
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    @Value("${ADMIN_USERNAME}")
+    private String adminUsername;
+    @Value("${ADMIN_PASSWORD}")
+    private String adminPassword;
 
     @EventListener(ApplicationReadyEvent.class)
     public void runAfterStartup() {
