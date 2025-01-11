@@ -22,6 +22,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 @RequiredArgsConstructor
@@ -31,19 +32,27 @@ public class PersonService {
     private final UserServices userService;
     private final UserRepository userRepository;
     private final WebSocketController webSocketController;
+    private final ConcurrentHashMap<Integer, Integer> inMemoryCache = new ConcurrentHashMap<>();
 
     public Person getPersonById(Long id) throws NotFoundException {
         return personRepository.findById(id).orElseThrow(() -> new NotFoundException("презираю жабу"));
     }
 
-
-    public void addPerson(Person person) {
+    public void addPerson(Person person) throws InsufficientEditingRightsException {
+        if (inMemoryCache.containsKey(person.hashCodeForInMemoryCache())) {
+            throw new InsufficientEditingRightsException("а такой челик уже есть");
+        }
         person.setOwnerId(userService.getCurrentUserId());
         personRepository.save(person);
+        inMemoryCache.put(person.hashCodeForInMemoryCache(), 0);
     }
 
-    public void validatePerson(Person person) {
+    public boolean validatePerson(Person person) {
+        if (inMemoryCache.containsKey(person.hashCodeForInMemoryCache())) {
+            return false;
+        }
         personValidator.validatePerson(person);
+        return true;
     }
 
     public void validateDirectionScreenwriterOperator(Person direction, Person screenwriter, Person operator) throws PersonValidationException {
@@ -53,7 +62,10 @@ public class PersonService {
     public void update(Long id, Person updatedPerson) throws NotFoundException, InsufficientEditingRightsException {
         Person person = getPersonById(id);
         updatePerson(person, updatedPerson, "person");
+        var oldHash = person.hashCodeForInMemoryCache();
         personRepository.save(person);
+        inMemoryCache.remove(oldHash);
+        inMemoryCache.put(updatedPerson.hashCodeForInMemoryCache(), 0);
         webSocketController.updatePerson(person);
 
     }
@@ -127,5 +139,8 @@ public class PersonService {
             person.setOwnerId(id);
         }
         personRepository.saveAll(persons);
+        for (Person person : persons) {
+            inMemoryCache.put(person.hashCodeForInMemoryCache(), 0);
+        }
     }
 }

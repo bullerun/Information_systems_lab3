@@ -1,14 +1,12 @@
 package com.example.is_backend.controller;
 
 import com.example.is_backend.dto.PersonDTO;
-import com.example.is_backend.entity.Movie;
 import com.example.is_backend.entity.Person;
 import com.example.is_backend.exception.InsufficientEditingRightsException;
 import com.example.is_backend.exception.NotFoundException;
 import com.example.is_backend.exception.PersistentException;
 import com.example.is_backend.service.FileProcessingService;
 import com.example.is_backend.service.PersonService;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Pattern;
 import lombok.RequiredArgsConstructor;
@@ -31,7 +29,7 @@ public class PersonController {
 
     @PostMapping("/add")
     @ResponseStatus(HttpStatus.CREATED)
-    public void createOrUpdateEmployee(@Valid @RequestBody Person person) {
+    public void createPerson(@Valid @RequestBody Person person) throws InsufficientEditingRightsException {
         personService.addPerson(person);
     }
 

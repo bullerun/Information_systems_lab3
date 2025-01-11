@@ -1,7 +1,6 @@
 package com.example.is_backend.service;
 
 import com.example.is_backend.entity.Person;
-import com.example.is_backend.repository.PersonRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -24,8 +23,9 @@ public class JsonService {
         var persons = new ArrayList<Person>();
         if (clazz == Person.class) {
             for (T entity : entities) {
-                personService.validatePerson((Person) entity);
-                persons.add((Person) entity);
+                if (personService.validatePerson((Person) entity)){
+                    persons.add((Person) entity);
+                }
             }
         }
         personService.addPersons(persons);
@@ -37,6 +37,5 @@ public class JsonService {
             allData.addAll(parseJson(json, clazz));
         }
         validateEntities(allData, clazz);
-
     }
 }
