@@ -1,11 +1,14 @@
 package com.example.is_backend.service;
 
+import com.example.is_backend.exception.NotFoundException;
+import com.example.is_backend.exception.PersonValidationException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Objects;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -14,12 +17,12 @@ import java.util.zip.ZipInputStream;
 public class FileProcessingService {
     private final JsonService jsonService;
 
-    public void processFile(MultipartFile file, Class<?> clazz) throws IOException {
+    public void processFile(MultipartFile file, Class<?> clazz) throws IOException, PersonValidationException, NotFoundException {
         String contentType = file.getContentType();
 
-        if (contentType.equals("application/json")) {
+        if (Objects.equals(contentType, "application/json")) {
             processJsonFile(file, clazz);
-        } else if (contentType.equals("application/x-zip-compressed")) {
+        } else if (Objects.equals(contentType, "application/x-zip-compressed")) {
             processZipFile(file, clazz);
         }
     }
@@ -48,7 +51,7 @@ public class FileProcessingService {
         }
     }
 
-    private void processZipFile(MultipartFile file, Class<?> clazz) throws IOException {
+    private void processZipFile(MultipartFile file, Class<?> clazz) throws IOException, PersonValidationException, NotFoundException {
         validateZipFile(file);
         var jsonList = new ArrayList<String>();
         try (ZipInputStream zipInputStream = new ZipInputStream(file.getInputStream())) {

@@ -4,9 +4,15 @@ import com.example.is_backend.authentication.service.UserServices;
 import com.example.is_backend.dto.MovieDTO;
 import com.example.is_backend.entity.Coordinates;
 import com.example.is_backend.entity.Movie;
-import com.example.is_backend.exception.*;
+import com.example.is_backend.entity.Person;
+import com.example.is_backend.exception.InsufficientEditingRightsException;
+import com.example.is_backend.exception.MovieNotFoundException;
+import com.example.is_backend.exception.NotFoundException;
+import com.example.is_backend.exception.PersonValidationException;
 import com.example.is_backend.repository.MovieRepository;
 import com.example.is_backend.request.MovieRequest;
+import com.example.is_backend.validator.MovieValidator;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -16,48 +22,87 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 @Service
 @RequiredArgsConstructor
 public class MovieService {
     private final MovieRepository movieRepository;
     private final PersonService personService;
+    private final MovieValidator movieValidator;
     private final UserServices userService;
+    private final Map<String, Object> movieCache = new ConcurrentHashMap<>();
+    private static final Object DUMMY_VALUE = new Object();
+
+    private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
+
+
+    private String generateMovieKey(String name, Integer length) {
+        return name + "::" + length;
+    }
+
+
+    @PostConstruct
+    private void loadMoviesToCache() {
+        movieRepository.findAll().forEach(movie -> movieCache.put(generateMovieKey(movie.getName(), movie.getLength()), movie));
+    }
 
     @Transactional
     public void addMovie(MovieRequest movieRequest) throws NotFoundException, PersonValidationException {
-        // TODO сделать эксепшены чтобы было КРАСИВА
-        var userID = userService.getCurrentUserId();
-        var direction = movieRequest.getDirector();
-        if (direction == null) {
-            if (movieRequest.getDirector_id() == null) {
-                throw new NotFoundException("director не указан");
-            }
-            direction = personService.getPersonById(movieRequest.getDirector_id());
-        } else {
-            direction.setOwnerId(userID);
-        }
+        String movieKey = generateMovieKey(movieRequest.getName(), movieRequest.getLength());
 
-        var screenwriter = movieRequest.getScreenwriter();
-        if (screenwriter == null) {
-            if (movieRequest.getScreenwriter_id() != null) {
-                screenwriter = personService.getPersonById(movieRequest.getScreenwriter_id());
-            }
-        } else {
-            screenwriter.setOwnerId(userID);
-        }
 
-        var operator = movieRequest.getOperator();
-        if (operator == null) {
-            if (movieRequest.getOperator_id() == null) {
-                throw new NotFoundException("operator не указан");
+        lock.readLock().lock();
+        try {
+            if (movieCache.containsKey(movieKey)) {
+                return; // Фильм уже существует
             }
-            operator = personService.getPersonById(movieRequest.getOperator_id());
-        } else {
-            operator.setOwnerId(userID);
+        } finally {
+            lock.readLock().unlock();
         }
+        var userId = userService.getCurrentUserId();
 
-        personService.validateDirectionScreenwriterOperator(direction, screenwriter, operator);
+
+        var director = getOrCreatePerson(movieRequest.getDirector(), movieRequest.getDirector_id(), "director не указан", userId);
+        var screenwriter = getOrCreatePerson(movieRequest.getScreenwriter(), movieRequest.getScreenwriter_id(), null, userId); // screenwriter может быть null
+        var operator = getOrCreatePerson(movieRequest.getOperator(), movieRequest.getOperator_id(), "operator не указан", userId);
+
+
+        personService.validateDirectionScreenwriterOperator(director, screenwriter, operator);
+
+
+        Movie movie = buildMovie(movieRequest, userId, director, screenwriter, operator);
+
+        lock.writeLock().lock();
+        try {
+            if (movieCache.containsKey(movieKey)) {
+                return;
+            }
+            movieRepository.save(movie);
+            movieCache.put(movieKey, DUMMY_VALUE);
+
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    private Person getOrCreatePerson(Person person, Long personId, String notFoundMessage, Long ownerId) throws NotFoundException {
+        if (person != null) {
+            person.setOwnerId(ownerId);
+            return person;
+        }
+        if (personId == null) {
+            if (notFoundMessage != null) {
+                throw new NotFoundException(notFoundMessage);
+            }
+            return null;
+        }
+        return personService.getPersonById(personId);
+    }
+
+    private Movie buildMovie(MovieRequest movieRequest, Long userId, Person director, Person screenwriter, Person operator) {
         Movie movie = new Movie();
         movie.setName(movieRequest.getName());
         movie.setCoordinates(movieRequest.getCoordinates());
@@ -68,38 +113,57 @@ public class MovieService {
         movie.setLength(movieRequest.getLength());
         movie.setGoldenPalmCount(movieRequest.getGoldenPalmCount());
         movie.setGenre(movieRequest.getGenre());
-        movie.setDirector(direction);
+        movie.setDirector(director);
         movie.setScreenwriter(screenwriter);
         movie.setOperator(operator);
-        movie.setOwnerId(userID);
-        movieRepository.save(movie);
+        movie.setOwnerId(userId);
+        return movie;
     }
 
     @Transactional
     public void update(Long id, MovieRequest updatedMovie) throws NotFoundException, InsufficientEditingRightsException, MovieNotFoundException {
+        lock.readLock().lock();
+        if (movieCache.containsKey(generateMovieKey(updatedMovie.getName(), updatedMovie.getLength()))) {
+            throw new InsufficientEditingRightsException("Такой фильм уже есть");
+        }
+        lock.readLock().unlock();
+
+
         var movie = movieRepository.findById(id).orElseThrow(() -> new MovieNotFoundException("а чет не нашлось фильма то"));
         if (!movie.getOwnerId().equals(userService.getCurrentUserId())) {
             throw new InsufficientEditingRightsException("недостаточно прав на изменение фильма");
         }
-        movie.setName(updatedMovie.getName());
-        if (!movie.getCoordinates().equals(updatedMovie.getCoordinates())) {
-            updateCoordinates(movie.getCoordinates(), updatedMovie.getCoordinates());
+
+        lock.writeLock().lock();
+        movieCache.put(generateMovieKey(updatedMovie.getName(), updatedMovie.getLength()), null);
+        lock.writeLock().unlock();
+        try {
+            movie.setName(updatedMovie.getName());
+            if (!movie.getCoordinates().equals(updatedMovie.getCoordinates())) {
+                updateCoordinates(movie.getCoordinates(), updatedMovie.getCoordinates());
+            }
+            selectHowUpdatePerson(movie, updatedMovie);
+            movie.setOscarsCount(updatedMovie.getOscarsCount());
+            movie.setBudget(updatedMovie.getBudget());
+            movie.setTotalBoxOffice(updatedMovie.getTotalBoxOffice());
+            movie.setMpaaRating(updatedMovie.getMpaaRating());
+            movie.setLength(updatedMovie.getLength());
+            movie.setGenre(updatedMovie.getGenre());
+            movieRepository.save(movie);
+        }catch (Exception e) {
+            lock.writeLock().lock();
+            movieCache.remove(generateMovieKey(updatedMovie.getName(), updatedMovie.getLength()));
+            lock.writeLock().unlock();
+            throw e;
         }
-        selectHowUpdatePerson(movie, updatedMovie);
-        movie.setOscarsCount(updatedMovie.getOscarsCount());
-        movie.setBudget(updatedMovie.getBudget());
-        movie.setTotalBoxOffice(updatedMovie.getTotalBoxOffice());
-        movie.setMpaaRating(updatedMovie.getMpaaRating());
-        movie.setLength(updatedMovie.getLength());
-        movie.setGenre(updatedMovie.getGenre());
-        movieRepository.save(movie);
+
     }
 
     public void selectHowUpdatePerson(Movie movie, MovieRequest updatedMovie) throws InsufficientEditingRightsException, NotFoundException {
         if (updatedMovie.getDirector_id() != null) {
             movie.setDirector(personService.getPersonById(updatedMovie.getDirector_id()));
         } else if (updatedMovie.getDirector() != null) {
-            personService.updatePerson(movie.getDirector(), updatedMovie.getDirector(), "direction");
+            personService.updatePersonFields(movie.getDirector(), updatedMovie.getDirector(), "direction");
         }
 
         if (updatedMovie.getScreenwriter_id() != null) {
@@ -110,7 +174,7 @@ public class MovieService {
             movie.getScreenwriter().setOwnerId(userService.getCurrentUserId());
 
         } else if (updatedMovie.getScreenwriter() != null) {
-            personService.updatePerson(movie.getScreenwriter(), updatedMovie.getScreenwriter(), "screenwriter");
+            personService.updatePersonFields(movie.getScreenwriter(), updatedMovie.getScreenwriter(), "screenwriter");
         } else {
             movie.setScreenwriter(null);
         }
@@ -119,7 +183,7 @@ public class MovieService {
         if (updatedMovie.getOperator_id() != null) {
             movie.setOperator(personService.getPersonById(updatedMovie.getOperator_id()));
         } else if (updatedMovie.getOperator() != null) {
-            personService.updatePerson(movie.getOperator(), updatedMovie.getOperator(), "operator");
+            personService.updatePersonFields(movie.getOperator(), updatedMovie.getOperator(), "operator");
         }
 
     }
@@ -163,7 +227,20 @@ public class MovieService {
         dto.setOwner_id(movie.getOwnerId());
         return dto;
     }
+
     public void deleteMovie(Long id) {
         movieRepository.deleteById(id);
+    }
+
+    public boolean validateMovie(MovieRequest entity) {
+        movieValidator.validateMovie(entity);
+        return true;
+    }
+
+    @Transactional
+    public void addMovies(ArrayList<MovieRequest> movies) throws PersonValidationException, NotFoundException {
+        for (MovieRequest movie : movies) {
+            addMovie(movie);
+        }
     }
 }

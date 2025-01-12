@@ -5,24 +5,23 @@ import com.example.is_backend.controller.WebSocketController;
 import com.example.is_backend.dto.PersonDTO;
 import com.example.is_backend.entity.Location;
 import com.example.is_backend.entity.Person;
-import com.example.is_backend.entity.User;
-import com.example.is_backend.exception.InsufficientEditingRightsException;
-import com.example.is_backend.exception.NotFoundException;
-import com.example.is_backend.exception.PersistentException;
-import com.example.is_backend.exception.PersonValidationException;
+import com.example.is_backend.exception.*;
 import com.example.is_backend.repository.PersonRepository;
-import com.example.is_backend.repository.UserRepository;
 import com.example.is_backend.validator.PersonValidator;
-import jakarta.transaction.Transactional;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.stream.Collectors;
+
 
 @Service
 @RequiredArgsConstructor
@@ -30,61 +29,101 @@ public class PersonService {
     private final PersonRepository personRepository;
     private final PersonValidator personValidator;
     private final UserServices userService;
-    private final UserRepository userRepository;
     private final WebSocketController webSocketController;
     private final ConcurrentHashMap<Integer, Integer> inMemoryCache = new ConcurrentHashMap<>();
+    private final ReentrantReadWriteLock cacheLock = new ReentrantReadWriteLock();
 
     public Person getPersonById(Long id) throws NotFoundException {
-        return personRepository.findById(id).orElseThrow(() -> new NotFoundException("презираю жабу"));
+        return personRepository.findById(id).orElseThrow(() -> new NotFoundException("Человек с id " + id + " не найден."));
     }
 
+    @Transactional
     public void addPerson(Person person) throws InsufficientEditingRightsException {
-        if (inMemoryCache.containsKey(person.hashCodeForInMemoryCache())) {
-            throw new InsufficientEditingRightsException("а такой челик уже есть");
+        int hash = person.hashCodeForInMemoryCache();
+
+        cacheLock.writeLock().lock();
+        try {
+            if (inMemoryCache.containsKey(hash)) {
+                throw new InsufficientEditingRightsException("такой человек уже создан");
+            }
+            inMemoryCache.put(hash, 0);
+        } finally {
+            cacheLock.writeLock().unlock();
         }
-        person.setOwnerId(userService.getCurrentUserId());
-        personRepository.save(person);
-        inMemoryCache.put(person.hashCodeForInMemoryCache(), 0);
+
+        try {
+            // Устанавливаем владельца и сохраняем объект в репозитории.
+            person.setOwnerId(userService.getCurrentUserId());
+            personRepository.save(person);
+        } catch (Exception e) {
+            // Если произошла ошибка, удаляем кеш.
+            cacheLock.writeLock().lock();
+            try {
+                inMemoryCache.remove(hash);
+            } finally {
+                cacheLock.writeLock().unlock();
+            }
+            throw e;
+        }
+    }
+
+    private boolean isPersonUnique(Person person) {
+        int hash = person.hashCodeForInMemoryCache();
+        cacheLock.readLock().lock();
+        try {
+            return inMemoryCache.containsKey(hash);
+        } finally {
+            cacheLock.readLock().unlock();
+        }
     }
 
     public boolean validatePerson(Person person) {
-        if (inMemoryCache.containsKey(person.hashCodeForInMemoryCache())) {
+        if (!isPersonUnique(person)) {
             return false;
         }
         personValidator.validatePerson(person);
         return true;
     }
 
-    public void validateDirectionScreenwriterOperator(Person direction, Person screenwriter, Person operator) throws PersonValidationException {
-        personValidator.validateDirectorScreenwriterOperator(direction, screenwriter, operator);
-    }
-
+    @Transactional
     public void update(Long id, Person updatedPerson) throws NotFoundException, InsufficientEditingRightsException {
-        Person person = getPersonById(id);
-        updatePerson(person, updatedPerson, "person");
-        var oldHash = person.hashCodeForInMemoryCache();
-        personRepository.save(person);
-        inMemoryCache.remove(oldHash);
-        inMemoryCache.put(updatedPerson.hashCodeForInMemoryCache(), 0);
-        webSocketController.updatePerson(person);
+        cacheLock.readLock().lock();
+        if (inMemoryCache.containsKey(updatedPerson.hashCodeForInMemoryCache())) {
+            throw new PersistentException("Такой person уже существует");
+        }
+        cacheLock.readLock().unlock();
 
+        Person person = getPersonById(id);
+        int oldHash = person.hashCodeForInMemoryCache();
+        updatePersonFields(person, updatedPerson, "person");
+
+        cacheLock.writeLock().lock();
+        inMemoryCache.remove(oldHash);
+        inMemoryCache.put(person.hashCodeForInMemoryCache(), 0);
+        cacheLock.writeLock().unlock();
+
+        try {
+            personRepository.save(person);
+        }catch (Exception e) {
+            cacheLock.writeLock().lock();
+            inMemoryCache.remove(person.hashCodeForInMemoryCache());
+            inMemoryCache.put(oldHash, 0);
+            cacheLock.writeLock().unlock();
+            throw e;
+        }
+        webSocketController.updatePerson(person);
     }
 
-    public void updatePerson(Person person, Person personRequest, String s) throws InsufficientEditingRightsException {
-        if (person == null && personRequest == null) {
-            return;
-        }
+    protected void updatePersonFields(Person person, Person updatedPerson, String personName) throws InsufficientEditingRightsException {
         if (!person.getOwnerId().equals(userService.getCurrentUserId())) {
-            throw new InsufficientEditingRightsException("недостаточно прав чтобы изменить" + s);
+            throw new InsufficientEditingRightsException("Недостаточно прав для изменения данных." + personName);
         }
-        person.setName(personRequest.getName());
-        person.setEyeColor(personRequest.getEyeColor());
-        person.setHairColor(personRequest.getHairColor());
-        if (!person.getLocation().equals(personRequest.getLocation())) {
-            updateLocation(person.getLocation(), personRequest.getLocation());
-        }
-        person.setWeight(personRequest.getWeight());
-        person.setNationality(personRequest.getNationality());
+        person.setName(updatedPerson.getName());
+        person.setEyeColor(updatedPerson.getEyeColor());
+        person.setHairColor(updatedPerson.getHairColor());
+        person.setWeight(updatedPerson.getWeight());
+        person.setNationality(updatedPerson.getNationality());
+        updateLocation(person.getLocation(), updatedPerson.getLocation());
     }
 
     private void updateLocation(Location oldLocation, Location newLocation) {
@@ -95,17 +134,8 @@ public class PersonService {
     }
 
     public List<PersonDTO> getAllPersons(Integer page, Integer pageSize, String sortDirection, String sortProperty) {
-        Page<Person> a = personRepository.findAll(PageRequest.of(page, pageSize, Sort.by(Sort.Direction.fromString(sortDirection), sortProperty)));
-        return toPersonDTO(a.getContent());
-    }
-
-
-    private List<PersonDTO> toPersonDTO(List<Person> persons) {
-        List<PersonDTO> dtos = new ArrayList<>();
-        for (Person person : persons) {
-            dtos.add(toPersonDTO(person));
-        }
-        return dtos;
+        Page<Person> persons = personRepository.findAll(PageRequest.of(page, pageSize, Sort.by(Sort.Direction.fromString(sortDirection), sortProperty)));
+        return persons.stream().map(this::toPersonDTO).collect(Collectors.toList());
     }
 
     public PersonDTO toPersonDTO(Person person) {
@@ -122,25 +152,53 @@ public class PersonService {
     }
 
     @Transactional
-    public void deletePerson(Long id, String username) throws NotFoundException {
-        User user = userRepository.findByUsername(username).orElseThrow(() -> new NotFoundException("пользователь не найдет"));
+    public void deletePerson(Long id) {
+        Long ownerId = userService.getCurrentUserId();
+        Person person = personRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Person не найден"));
+
+        if (!person.getOwnerId().equals(ownerId)) {
+            throw new PersistentException("Person принадлежит не вам");
+        }
+
+        personRepository.deleteByIdAndOwnerIdIs(id, ownerId);
+
+        cacheLock.writeLock().lock();
+        inMemoryCache.remove(person.hashCodeForInMemoryCache());
+        cacheLock.writeLock().unlock();
+
+        webSocketController.deletePerson(id);
+    }
+
+    @Transactional
+    public void addPersons(List<Person> persons) {
+        Long ownerId = userService.getCurrentUserId();
+        List<Person> newUniqPerson = new ArrayList<>();
+        for (Person person : persons) {
+            if (validatePerson(person)) {
+                person.setOwnerId(ownerId);
+                newUniqPerson.add(person);
+            }
+        }
+
+
+        cacheLock.writeLock().lock();
+        newUniqPerson.forEach(person -> inMemoryCache.put(person.hashCodeForInMemoryCache(), 0));
+        cacheLock.writeLock().unlock();
+
+
         try {
-            personRepository.deleteByIdAndOwnerIdIs(id, user.getId());
-            webSocketController.deletePerson(id);
-        } catch (Exception ex) {
-            throw new PersistentException("Удаление невозможно: запись связана с другими объектами.");
+            personRepository.saveAll(newUniqPerson);
+        } catch (Exception e) {
+            cacheLock.writeLock().lock();
+            newUniqPerson.forEach(person -> inMemoryCache.remove(person.hashCodeForInMemoryCache()));
+            cacheLock.writeLock().unlock();
+
         }
 
     }
 
-    public void addPersons(List<Person> persons) {
-        var id = userService.getCurrentUserId();
-        for (Person person : persons) {
-            person.setOwnerId(id);
-        }
-        personRepository.saveAll(persons);
-        for (Person person : persons) {
-            inMemoryCache.put(person.hashCodeForInMemoryCache(), 0);
-        }
+    public void validateDirectionScreenwriterOperator(Person direction, Person screenwriter, Person operator) throws PersonValidationException {
+        personValidator.validateDirectorScreenwriterOperator(direction, screenwriter, operator);
     }
 }

@@ -45,7 +45,7 @@ public class MovieController {
     }
 
     @DeleteMapping
-    public void deleteMovie(@RequestParam Long id) {
+    public void deleteMovie(@RequestParam Long id)  {
         movieService.deleteMovie(id);
         messagingTemplate.convertAndSend("/topic/movie", Map.of("action", "deleted", "value", id));
     }

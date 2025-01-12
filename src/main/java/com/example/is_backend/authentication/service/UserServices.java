@@ -43,7 +43,7 @@ public class UserServices {
     }
 
     public Long getCurrentUserId() {
-        return getByUsername(SecurityContextHolder.getContext().getAuthentication().getName()).getId();
+        return getCurrentUser().getId();
     }
 
     public void setAdmin(Long id) {

@@ -68,6 +68,4 @@ public class MovieRequest {
     private Long director_id;
     private Long screenwriter_id;
     private Long operator_id;
-
-
 }

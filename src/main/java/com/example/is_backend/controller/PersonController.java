@@ -15,7 +15,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.security.Principal;
 import java.util.List;
 import java.util.Map;
 
@@ -50,9 +49,9 @@ public class PersonController {
     }
 
     @DeleteMapping("/delete")
-    public void deletePerson(@RequestParam Long id, Principal principal) {
+    public void deletePerson(@RequestParam Long id) {
         try {
-            personService.deletePerson(id, principal.getName());
+            personService.deletePerson(id);
         } catch (Exception ex) {
             throw new PersistentException("Удаление невозможно: запись связана с другими объектами.");
         }
