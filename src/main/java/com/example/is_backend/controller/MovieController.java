@@ -8,6 +8,7 @@ import com.example.is_backend.exception.PersonValidationException;
 import com.example.is_backend.request.MovieRequest;
 import com.example.is_backend.service.FileProcessingService;
 import com.example.is_backend.service.MovieService;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Pattern;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -30,7 +31,7 @@ public class MovieController {
 
     @ResponseStatus(HttpStatus.CREATED)
     @PostMapping("/add")
-    public void addMovie(@RequestBody MovieRequest movie) throws PersonValidationException, NotFoundException, InsufficientEditingRightsException {
+    public void addMovie(@Valid @RequestBody MovieRequest movie) throws PersonValidationException, NotFoundException, InsufficientEditingRightsException {
         movieService.addMovie(movie);
     }
 
