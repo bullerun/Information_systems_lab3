@@ -1,6 +1,7 @@
 package com.example.is_backend.controller;
 
 import com.example.is_backend.exception.*;
+import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -104,7 +105,14 @@ public class GlobalExceptionHandler {
         m.put("error", "Некорректное содержимое в файле");
         return m;
     }
-
+    @ExceptionHandler(MismatchedInputException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public Map<String, String> badFile(Exception ex) {
+        Map<String, String> m = new HashMap<>();
+        System.out.println(ex.getMessage());
+        m.put("error", "некорректно записанные данные в файле, возможно стоит добавить [ в начале и ] в конце файла");
+        return m;
+    }
     @ExceptionHandler(Exception.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public String internalServerError(Exception ex) {

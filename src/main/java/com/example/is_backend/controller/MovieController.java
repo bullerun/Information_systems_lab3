@@ -30,7 +30,7 @@ public class MovieController {
 
     @ResponseStatus(HttpStatus.CREATED)
     @PostMapping("/add")
-    public void addMovie(@RequestBody MovieRequest movie) throws PersonValidationException, NotFoundException {
+    public void addMovie(@RequestBody MovieRequest movie) throws PersonValidationException, NotFoundException, InsufficientEditingRightsException {
         movieService.addMovie(movie);
     }
 
@@ -54,7 +54,7 @@ public class MovieController {
     }
 
     @PostMapping("/upload")
-    public ResponseEntity<?> uploadFiles(@RequestParam("file") MultipartFile file) throws PersonValidationException, NotFoundException, IOException {
+    public ResponseEntity<?> uploadFiles(@RequestParam("file") MultipartFile file) throws PersonValidationException, NotFoundException, IllegalArgumentException, IOException, InsufficientEditingRightsException {
 
         String contentType = file.getContentType();
         if (contentType != null && !contentType.equals("application/json") && !contentType.equals("application/x-zip-compressed")) {

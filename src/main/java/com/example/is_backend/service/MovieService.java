@@ -47,12 +47,12 @@ public class MovieService {
     }
 
     @Transactional
-    public void addMovie(MovieRequest movieRequest) throws NotFoundException, PersonValidationException {
+    public void addMovie(MovieRequest movieRequest) throws NotFoundException, PersonValidationException, InsufficientEditingRightsException, IllegalArgumentException {
         String movieKey = generateMovieKey(movieRequest.getName(), movieRequest.getLength());
 
 
         if (movieCache.containsKey(movieKey)) {
-            return; // Фильм уже существует
+            throw new IllegalArgumentException("фильм уже создан!");
         }
 
         var userId = userService.getCurrentUserId();
@@ -72,6 +72,15 @@ public class MovieService {
         }
         movieCache.put(movieKey, DUMMY_VALUE);
         try {
+            if (director.getId() == null) {
+                movie.setDirector(personService.addPerson(director));
+            }
+            if (screenwriter != null && screenwriter.getId() == null) {
+                movie.setScreenwriter(personService.addPerson(screenwriter));
+            }
+            if (operator.getId() == null) {
+                movie.setOperator(personService.addPerson(operator));
+            }
             movieRepository.save(movie);
         } catch (Exception e) {
             movieCache.remove(movieKey);
@@ -226,7 +235,10 @@ public class MovieService {
     public void addMovies(ArrayList<MovieRequest> movies) throws PersonValidationException, NotFoundException {
         for (MovieRequest movie : movies) {
             if (validateMovie(movie)) {
-                addMovie(movie);
+                try {
+                    addMovie(movie);
+                } catch (IllegalArgumentException | InsufficientEditingRightsException _) {
+                }
             }
         }
     }

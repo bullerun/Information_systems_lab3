@@ -69,7 +69,7 @@ public class PersonController {
     }
 
     @PostMapping("/upload")
-    public ResponseEntity<?> uploadFiles(MultipartFile file) throws PersonValidationException, NotFoundException, IOException {
+    public ResponseEntity<?> uploadFiles(MultipartFile file) throws PersonValidationException, NotFoundException, IllegalArgumentException, IOException, InsufficientEditingRightsException {
 
         String contentType = file.getContentType();
         if (contentType != null && !contentType.equals("application/json") && !contentType.equals("application/x-zip-compressed")) {

@@ -52,7 +52,7 @@ public class PersonService {
 
 
     @Transactional
-    public void addPerson(Person person) throws InsufficientEditingRightsException {
+    public Person addPerson(Person person) throws InsufficientEditingRightsException {
         int hash = generatePersonKey(person);
 
 
@@ -64,7 +64,7 @@ public class PersonService {
         try {
             // Устанавливаем владельца и сохраняем объект в репозитории.
             person.setOwnerId(userService.getCurrentUserId());
-            personRepository.save(person);
+            return personRepository.save(person);
         } catch (Exception e) {
             // Если произошла ошибка, удаляем кеш.
 

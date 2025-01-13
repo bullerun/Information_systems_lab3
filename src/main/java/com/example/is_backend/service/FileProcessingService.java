@@ -3,6 +3,7 @@ package com.example.is_backend.service;
 import com.example.is_backend.authentication.service.UserServices;
 import com.example.is_backend.entity.FileEnum;
 import com.example.is_backend.entity.FileHistory;
+import com.example.is_backend.exception.InsufficientEditingRightsException;
 import com.example.is_backend.exception.NotFoundException;
 import com.example.is_backend.exception.PersonValidationException;
 import com.example.is_backend.repository.FileHistoryRepository;
@@ -49,7 +50,7 @@ public class FileProcessingService {
         }
     }
 
-    public void processFile(MultipartFile file, Class<?> clazz) throws IllegalArgumentException, IOException, PersonValidationException, NotFoundException {
+    public void processFile(MultipartFile file, Class<?> clazz) throws IllegalArgumentException, IOException, PersonValidationException, NotFoundException, InsufficientEditingRightsException {
         String contentType = file.getContentType();
         FileHistory fileHistory = new FileHistory();
         fileHistory.setFileName(file.getOriginalFilename());
@@ -96,7 +97,7 @@ public class FileProcessingService {
         }
     }
 
-    private void processZipFile(MultipartFile file, Class<?> clazz) throws IOException, PersonValidationException, NotFoundException {
+    private void processZipFile(MultipartFile file, Class<?> clazz) throws IOException, PersonValidationException, NotFoundException, InsufficientEditingRightsException {
         validateZipFile(file);
         var jsonList = new ArrayList<String>();
         try (ZipInputStream zipInputStream = new ZipInputStream(file.getInputStream())) {
