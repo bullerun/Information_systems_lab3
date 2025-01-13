@@ -24,7 +24,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 @Service
 @RequiredArgsConstructor
@@ -36,8 +35,6 @@ public class MovieService {
     private final Map<String, Object> movieCache = new ConcurrentHashMap<>();
     private static final Object DUMMY_VALUE = new Object();
 
-    private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
-
 
     private String generateMovieKey(String name, Integer length) {
         return name + "::" + length;
@@ -46,7 +43,7 @@ public class MovieService {
 
     @PostConstruct
     private void loadMoviesToCache() {
-        movieRepository.findAll().forEach(movie -> movieCache.put(generateMovieKey(movie.getName(), movie.getLength()), movie));
+        movieRepository.findAll().forEach(movie -> movieCache.put(generateMovieKey(movie.getName(), movie.getLength()), DUMMY_VALUE));
     }
 
     @Transactional
@@ -54,14 +51,10 @@ public class MovieService {
         String movieKey = generateMovieKey(movieRequest.getName(), movieRequest.getLength());
 
 
-        lock.readLock().lock();
-        try {
-            if (movieCache.containsKey(movieKey)) {
-                return; // Фильм уже существует
-            }
-        } finally {
-            lock.readLock().unlock();
+        if (movieCache.containsKey(movieKey)) {
+            return; // Фильм уже существует
         }
+
         var userId = userService.getCurrentUserId();
 
 
@@ -72,19 +65,17 @@ public class MovieService {
 
         personService.validateDirectionScreenwriterOperator(director, screenwriter, operator);
 
-
         Movie movie = buildMovie(movieRequest, userId, director, screenwriter, operator);
 
-        lock.writeLock().lock();
+        if (movieCache.containsKey(movieKey)) {
+            return;
+        }
+        movieCache.put(movieKey, DUMMY_VALUE);
         try {
-            if (movieCache.containsKey(movieKey)) {
-                return;
-            }
             movieRepository.save(movie);
-            movieCache.put(movieKey, DUMMY_VALUE);
-
-        } finally {
-            lock.writeLock().unlock();
+        } catch (Exception e) {
+            movieCache.remove(movieKey);
+            throw e;
         }
     }
 
@@ -122,21 +113,17 @@ public class MovieService {
 
     @Transactional
     public void update(Long id, MovieRequest updatedMovie) throws NotFoundException, InsufficientEditingRightsException, MovieNotFoundException {
-        lock.readLock().lock();
         if (movieCache.containsKey(generateMovieKey(updatedMovie.getName(), updatedMovie.getLength()))) {
             throw new InsufficientEditingRightsException("Такой фильм уже есть");
         }
-        lock.readLock().unlock();
-
 
         var movie = movieRepository.findById(id).orElseThrow(() -> new MovieNotFoundException("а чет не нашлось фильма то"));
         if (!movie.getOwnerId().equals(userService.getCurrentUserId())) {
             throw new InsufficientEditingRightsException("недостаточно прав на изменение фильма");
         }
 
-        lock.writeLock().lock();
-        movieCache.put(generateMovieKey(updatedMovie.getName(), updatedMovie.getLength()), null);
-        lock.writeLock().unlock();
+        movieCache.put(generateMovieKey(updatedMovie.getName(), updatedMovie.getLength()), DUMMY_VALUE);
+
         try {
             movie.setName(updatedMovie.getName());
             if (!movie.getCoordinates().equals(updatedMovie.getCoordinates())) {
@@ -150,10 +137,8 @@ public class MovieService {
             movie.setLength(updatedMovie.getLength());
             movie.setGenre(updatedMovie.getGenre());
             movieRepository.save(movie);
-        }catch (Exception e) {
-            lock.writeLock().lock();
+        } catch (Exception e) {
             movieCache.remove(generateMovieKey(updatedMovie.getName(), updatedMovie.getLength()));
-            lock.writeLock().unlock();
             throw e;
         }
 
@@ -240,7 +225,9 @@ public class MovieService {
     @Transactional
     public void addMovies(ArrayList<MovieRequest> movies) throws PersonValidationException, NotFoundException {
         for (MovieRequest movie : movies) {
-            addMovie(movie);
+            if (validateMovie(movie)) {
+                addMovie(movie);
+            }
         }
     }
 }

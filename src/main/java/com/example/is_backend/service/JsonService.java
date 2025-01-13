@@ -27,15 +27,13 @@ public class JsonService {
         if (clazz == Person.class) {
             var persons = new ArrayList<Person>();
             for (T entity : entities) {
-                    persons.add((Person) entity);
+                persons.add((Person) entity);
             }
             personService.addPersons(persons);
         } else if (clazz == MovieRequest.class) {
             var movies = new ArrayList<MovieRequest>();
             for (T entity : entities) {
-                if (movieService.validateMovie((MovieRequest) entity)) {
-                    movies.add((MovieRequest) entity);
-                }
+                movies.add((MovieRequest) entity);
             }
             movieService.addMovies(movies);
         }

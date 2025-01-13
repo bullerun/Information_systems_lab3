@@ -1,10 +1,16 @@
 package com.example.is_backend.controller;
 
+import com.example.is_backend.authentication.service.UserServices;
+import com.example.is_backend.dto.FileHistoryDTO;
 import com.example.is_backend.dto.PersonDTO;
+import com.example.is_backend.entity.FileHistory;
 import com.example.is_backend.entity.Person;
 import com.example.is_backend.exception.InsufficientEditingRightsException;
 import com.example.is_backend.exception.NotFoundException;
 import com.example.is_backend.exception.PersistentException;
+import com.example.is_backend.exception.PersonValidationException;
+import com.example.is_backend.repository.FileHistoryRepository;
+import com.example.is_backend.repository.UserRepository;
 import com.example.is_backend.service.FileProcessingService;
 import com.example.is_backend.service.PersonService;
 import jakarta.validation.Valid;
@@ -15,6 +21,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -25,6 +33,9 @@ import java.util.Map;
 public class PersonController {
     private final PersonService personService;
     private final FileProcessingService fileProcessingService;
+    private final FileHistoryRepository fileHistoryRepository;
+    private final UserRepository userRepository;
+    private final UserServices userServices;
 
     @PostMapping("/add")
     @ResponseStatus(HttpStatus.CREATED)
@@ -58,16 +69,33 @@ public class PersonController {
     }
 
     @PostMapping("/upload")
-    public ResponseEntity<?> uploadFiles(MultipartFile file) {
-        try {
-            String contentType = file.getContentType();
-            if (contentType != null && !contentType.equals("application/json") && !contentType.equals("application/x-zip-compressed")) {
-                return ResponseEntity.badRequest().body("Only JSON and ZIP files are allowed.");
-            }
-            fileProcessingService.processFile(file, Person.class);
-            return ResponseEntity.ok().body(Map.of("message", "File uploaded successfully!"));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error processing the file: " + e.getMessage());
+    public ResponseEntity<?> uploadFiles(MultipartFile file) throws PersonValidationException, NotFoundException, IOException {
+
+        String contentType = file.getContentType();
+        if (contentType != null && !contentType.equals("application/json") && !contentType.equals("application/x-zip-compressed")) {
+            return ResponseEntity.badRequest().body("Only JSON and ZIP files are allowed.");
         }
+        fileProcessingService.processFile(file, Person.class);
+        return ResponseEntity.ok().body(Map.of("message", "File uploaded successfully!"));
     }
+    @GetMapping("/fileHistory")
+    public List<FileHistoryDTO> getHistory() {
+        List<FileHistoryDTO> fileHistoryListDTO = new ArrayList<>();
+        List<FileHistory> file = fileHistoryRepository.getByOwnerId(userServices.getCurrentUserId());
+        for (FileHistory fileHistory : file) {
+           fileHistoryListDTO.add(fileHistoryTODTO(fileHistory));
+        }
+        return fileHistoryListDTO;
+    }
+
+    private FileHistoryDTO fileHistoryTODTO(FileHistory fileHistory) {
+        FileHistoryDTO fileHistoryDTO = new FileHistoryDTO();
+        fileHistoryDTO.setFileName(fileHistory.getFileName());
+        fileHistoryDTO.setOwnerId(fileHistory.getOwnerId());
+        fileHistoryDTO.setStatus(fileHistory.getStatus());
+        return fileHistoryDTO;
+    }
+//    public List<FileHistoryDTO> getHistoryAdmin() {
+//        return fileHistoryRepository.findAll();
+//    }
 }

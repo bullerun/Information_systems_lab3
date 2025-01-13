@@ -30,5 +30,4 @@ public class MovieValidator {
             throw new CustomException(errors);
         }
     }
-
 }

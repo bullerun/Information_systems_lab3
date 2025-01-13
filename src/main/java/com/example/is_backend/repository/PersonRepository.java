@@ -13,11 +13,9 @@ import java.util.Optional;
 public interface PersonRepository extends JpaRepository<Person, Long> {
     @NotNull Optional<Person> findById(@NotNull Long id);
 
-    @NotNull
-    Page<Person> findAll(@NotNull Pageable pageable);
-
-
+    @NotNull Page<Person> findAll(@NotNull Pageable pageable);
 
     void deleteByIdAndOwnerIdIs(Long id, Long ownerId);
+
     void deleteById(@NotNull Long id);
 }

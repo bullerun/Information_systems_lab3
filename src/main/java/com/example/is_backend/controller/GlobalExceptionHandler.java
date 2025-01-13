@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -93,6 +94,14 @@ public class GlobalExceptionHandler {
     public Map<String, String> badRequest(Exception ex) {
         Map<String, String> m = new HashMap<>();
         m.put("error", ex.getMessage());
+        return m;
+    }
+    @ExceptionHandler(IOException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public Map<String, String> badFileRequest(Exception ex) {
+        Map<String, String> m = new HashMap<>();
+        System.out.println(ex.getMessage());
+        m.put("error", "Некорректное содержимое в файле");
         return m;
     }
 

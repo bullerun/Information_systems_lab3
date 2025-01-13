@@ -8,8 +8,6 @@ import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.Objects;
-
 @Setter
 @Getter
 @Entity
@@ -55,9 +53,5 @@ public class Person {
 
     @Column(name = "owner_id", nullable = false)
     private Long ownerId;
-
-    public int hashCodeForInMemoryCache() {
-        return Objects.hash(name, eyeColor, hairColor, weight, nationality);
-    }
 
 }
