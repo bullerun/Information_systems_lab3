@@ -181,6 +181,7 @@ public class PersonService {
             personRepository.saveAll(newUniqPerson);
         } catch (Exception e) {
             newUniqPerson.forEach(person -> inMemoryCache.remove(generatePersonKey(person)));
+            throw e;
         }
     }
 
