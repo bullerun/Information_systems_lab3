@@ -10,6 +10,7 @@ import com.example.is_backend.repository.FileHistoryRepository;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.*;
@@ -26,50 +27,68 @@ import java.util.zip.ZipInputStream;
 public class FileProcessingService {
     private final FileHistoryRepository fileHistoryRepository;
     private final JsonService jsonService;
-    private static final String HASH_FILE_PATH = "hashes.txt";
+//    private static final String HASH_FILE_PATH = "hashes.txt";
     private final ConcurrentHashMap<String, String> storedHashes = new ConcurrentHashMap<>();
     private final UserServices userServices;
+    private final MinioService minioService;
 
     @PostConstruct
     public void loadHashes() {
-        // Загружаем хэши из файла при старте
-        File hashFile = new File(HASH_FILE_PATH);
-        if (hashFile.exists()) {
-            try (BufferedReader reader = new BufferedReader(new FileReader(hashFile))) {
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    String[] parts = line.split(":", 2);
-                    if (parts.length == 2) {
-                        storedHashes.put(parts[0], parts[1]);
-                    }
-                }
-                System.out.println("Хэши загружены: " + storedHashes);
-            } catch (IOException e) {
-                throw new RuntimeException("Ошибка при загрузке файла хэшей", e);
-            }
-        }
+//        File hashFile = new File(HASH_FILE_PATH);
+//        if (hashFile.exists()) {
+//            try (BufferedReader reader = new BufferedReader(new FileReader(hashFile))) {
+//                String line;
+//                while ((line = reader.readLine()) != null) {
+//                    String[] parts = line.split(":", 2);
+//                    if (parts.length == 2) {
+//                        storedHashes.put(parts[0], parts[1]);
+//                    }
+//                }
+//                System.out.println("Хэши загружены: " + storedHashes);
+//            } catch (IOException e) {
+//                throw new RuntimeException("Ошибка при загрузке файла хэшей", e);
+//            }
+//        }
     }
 
+    @Transactional
     public void processFile(MultipartFile file, Class<?> clazz) throws IllegalArgumentException, IOException, PersonValidationException, NotFoundException, InsufficientEditingRightsException {
         String contentType = file.getContentType();
+        if (!Objects.equals(contentType, "application/x-zip-compressed")) {
+            throw new RuntimeException("Я ХОЧУ ЗИПКУ");
+        }
+
         FileHistory fileHistory = new FileHistory();
         fileHistory.setFileName(file.getOriginalFilename());
         fileHistory.setOwnerId(userServices.getCurrentUserId());
-        fileHistoryRepository.save(fileHistory);
-        if (Objects.equals(contentType, "application/x-zip-compressed")) {
-                String hash = calculateHash(file);
-            if (storedHashes.containsKey(hash)) {
-                fileHistory.setStatus(FileEnum.DUPLICATE);
-                fileHistoryRepository.save(fileHistory);
-                throw new IllegalArgumentException("Этот ZIP-файл уже был обработан");
-            }
-            processZipFile(file, clazz);
-            fileHistory.setStatus(FileEnum.COMPLETED);
-            fileHistoryRepository.save(fileHistory);
+        fileHistory.setStatus(FileEnum.PROCESSING);
+        fileHistory = fileHistoryRepository.save(fileHistory);
 
-            saveHash(file.getOriginalFilename(), hash);
-        } else {
-            throw new RuntimeException("Я ХОЧУ ЗИПКУ");
+        String hash = calculateHash(file);
+        if (storedHashes.containsKey(hash)) {
+            fileHistory.setStatus(FileEnum.DUPLICATE);
+            fileHistoryRepository.save(fileHistory);
+            throw new IllegalArgumentException("Этот ZIP-файл уже был обработан");
+        }
+
+        processZipFile(file, clazz);
+        fileHistory.setStatus(FileEnum.COMPLETED);
+        fileHistoryRepository.save(fileHistory);
+        saveHash(file.getOriginalFilename(), hash);
+
+
+        try {
+            minioService.uploadFile("import-files", file.getOriginalFilename(), file);
+        } catch (Exception e) {
+            fileHistory.setStatus(FileEnum.REJECTED);
+            fileHistoryRepository.save(fileHistory);
+            deleteHash(hash);
+            try {
+                minioService.deleteFile("import-files", file.getOriginalFilename());
+            } catch (Exception ex) {
+                System.err.println("Ошибка при удалении файла из MinIO: " + ex.getMessage());
+            }
+            throw new RuntimeException("Чет Minio не работает");
         }
     }
 
@@ -136,12 +155,11 @@ public class FileProcessingService {
 
     private void saveHash(String fileName, String hash) {
         storedHashes.put(hash, fileName);
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(HASH_FILE_PATH, true))) {
-            writer.write(hash + ":" + fileName);
-            writer.newLine();
-        } catch (IOException e) {
-            throw new RuntimeException("Ошибка при записи хэша в файл", e);
-        }
+    }
+
+    private void deleteHash(String hash) {
+        storedHashes.remove(hash);
+
     }
 
 }

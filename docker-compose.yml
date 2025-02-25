@@ -1,18 +1,35 @@
 version: '3.1'
 
-volumes:
-  postgresql_data:
 
 services:
-  is_lab_1:
+  is_lab_3:
     image: postgres:15-alpine
     ports:
-      - "5432:5432"
+      - "6543:6543"
     restart: always
     volumes:
       - postgresql_data:/var/lib/postgres/data
     environment:
+      - PGPORT=6543
       - POSTGRES_DB=postgres
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
-    container_name: is_lab_1
+    container_name: is_lab_3
+
+  minio:
+    image: minio/minio:latest
+    container_name: is-lab3-minio
+    environment:
+      MINIO_ROOT_USER: admin
+      MINIO_ROOT_PASSWORD: password
+    volumes:
+      - ./minio_data:/data
+    ports:
+      - "9000:9000"  # S3 API port
+      - "9001:9001"  # MinIO Console port
+    command: server /data --console-address ":9001"
+    restart: always
+
+volumes:
+  minio_data:
+  postgresql_data:

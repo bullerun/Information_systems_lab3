@@ -28,5 +28,5 @@ public class FileHistory {
 
     @Builder.Default
     @Column(name = "status")
-    private FileEnum status = FileEnum.REJECTED;
+    private FileEnum status = FileEnum.PENDING;
 }
