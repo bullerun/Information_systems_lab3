@@ -3,8 +3,7 @@ package com.example.is_backend.service;
 import com.example.is_backend.authentication.service.UserServices;
 import com.example.is_backend.controller.WebSocketController;
 import com.example.is_backend.dto.PersonDTO;
-import com.example.is_backend.entity.Location;
-import com.example.is_backend.entity.Person;
+import com.example.is_backend.entity.*;
 import com.example.is_backend.exception.InsufficientEditingRightsException;
 import com.example.is_backend.exception.NotFoundException;
 import com.example.is_backend.exception.PersistentException;
@@ -62,11 +61,9 @@ public class PersonService {
         inMemoryCache.put(hash, DUMMY_VALUE);
 
         try {
-            // Устанавливаем владельца и сохраняем объект в репозитории.
             person.setOwnerId(userService.getCurrentUserId());
             return personRepository.save(person);
         } catch (Exception e) {
-            // Если произошла ошибка, удаляем кеш.
 
             inMemoryCache.remove(hash);
 
@@ -97,7 +94,6 @@ public class PersonService {
         updatePersonFields(person, updatedPerson, "person");
 
 
-        // помечаю новый кэш как занятый, без удаления старого, чтобы не было момента когда update не прошел а старый кэш удален
         inMemoryCache.put(newHash, DUMMY_VALUE);
 
 
@@ -176,7 +172,6 @@ public class PersonService {
                 inMemoryCache.put(generatePersonKey(person), DUMMY_VALUE);
             }
         }
-
         try {
             personRepository.saveAll(newUniqPerson);
         } catch (Exception e) {
@@ -188,4 +183,6 @@ public class PersonService {
     public void validateDirectionScreenwriterOperator(Person direction, Person screenwriter, Person operator) throws PersonValidationException {
         personValidator.validateDirectorScreenwriterOperator(direction, screenwriter, operator);
     }
+
+
 }

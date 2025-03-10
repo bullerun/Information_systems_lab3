@@ -1,7 +1,6 @@
 package com.example.is_backend.service;
 
 import com.example.is_backend.entity.Person;
-import com.example.is_backend.exception.InsufficientEditingRightsException;
 import com.example.is_backend.exception.NotFoundException;
 import com.example.is_backend.exception.PersonValidationException;
 import com.example.is_backend.request.MovieRequest;
@@ -24,7 +23,7 @@ public class JsonService {
         return objectMapper.readValue(json, objectMapper.getTypeFactory().constructCollectionType(List.class, clazz));
     }
 
-    public <T> void validateEntities(List<T> entities, Class<T> clazz) throws PersonValidationException, NotFoundException, InsufficientEditingRightsException {
+    public <T> void validateEntities(List<T> entities, Class<T> clazz) throws PersonValidationException, NotFoundException {
         if (clazz == Person.class) {
             var persons = new ArrayList<Person>();
             for (T entity : entities) {
@@ -40,7 +39,7 @@ public class JsonService {
         }
     }
 
-    public <T> void parseJsons(ArrayList<String> jsonArr, Class<T> clazz) throws IOException, PersonValidationException, NotFoundException, InsufficientEditingRightsException {
+    public <T> void parseJsons(ArrayList<String> jsonArr, Class<T> clazz) throws IOException, PersonValidationException, NotFoundException {
         var allData = new ArrayList<T>();
         for (String json : jsonArr) {
             allData.addAll(parseJson(json, clazz));

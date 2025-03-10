@@ -41,7 +41,10 @@ public class UserServices {
         var username = SecurityContextHolder.getContext().getAuthentication().getName();
         return getByUsername(username);
     }
+    public String getCurrentUsername() {
+        return SecurityContextHolder.getContext().getAuthentication().getName();
 
+    }
     public Long getCurrentUserId() {
         return getCurrentUser().getId();
     }

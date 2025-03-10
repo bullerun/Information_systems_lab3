@@ -7,6 +7,7 @@ import lombok.Data;
 
 @Data
 public class FileHistoryDTO {
+    private Long id;
     private String fileName;
     private FileEnum status;
     private Long ownerId;

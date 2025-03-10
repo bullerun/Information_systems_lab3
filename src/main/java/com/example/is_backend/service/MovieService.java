@@ -163,7 +163,7 @@ public class MovieService {
         if (updatedMovie.getScreenwriter_id() != null) {
             movie.setScreenwriter(personService.getPersonById(updatedMovie.getScreenwriter_id()));
 
-        } else if (movie.getScreenwriter() == null) {
+        } else if (movie.getScreenwriter() == null && updatedMovie.getScreenwriter()!= null) {
             movie.setScreenwriter(updatedMovie.getScreenwriter());
             movie.getScreenwriter().setOwnerId(userService.getCurrentUserId());
 

@@ -3,6 +3,8 @@ package com.example.is_backend.controller;
 import com.example.is_backend.authentication.service.UserServices;
 import com.example.is_backend.dto.FileHistoryDTO;
 import com.example.is_backend.dto.PersonDTO;
+import com.example.is_backend.dto.TransactionRequest;
+import com.example.is_backend.entity.FileEnum;
 import com.example.is_backend.entity.FileHistory;
 import com.example.is_backend.entity.Person;
 import com.example.is_backend.exception.InsufficientEditingRightsException;
@@ -10,21 +12,24 @@ import com.example.is_backend.exception.NotFoundException;
 import com.example.is_backend.exception.PersistentException;
 import com.example.is_backend.exception.PersonValidationException;
 import com.example.is_backend.repository.FileHistoryRepository;
-import com.example.is_backend.repository.UserRepository;
+import com.example.is_backend.service.FileHistoryService;
 import com.example.is_backend.service.FileProcessingService;
+import com.example.is_backend.service.MinioService;
 import com.example.is_backend.service.PersonService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Pattern;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.io.InputStream;
+import java.util.*;
 
 
 @RestController
@@ -34,8 +39,9 @@ public class PersonController {
     private final PersonService personService;
     private final FileProcessingService fileProcessingService;
     private final FileHistoryRepository fileHistoryRepository;
-    private final UserRepository userRepository;
     private final UserServices userServices;
+    private final MinioService minioService;
+    private final FileHistoryService fileHistoryService;
 
     @PostMapping("/add")
     @ResponseStatus(HttpStatus.CREATED)
@@ -69,27 +75,66 @@ public class PersonController {
     }
 
     @PostMapping("/upload")
-    public ResponseEntity<?> uploadFiles(MultipartFile file) throws PersonValidationException, NotFoundException, IllegalArgumentException, IOException, InsufficientEditingRightsException {
+    public ResponseEntity<?> uploadFiles(MultipartFile file) throws PersonValidationException, NotFoundException, IllegalArgumentException, IOException, InterruptedException {
 
         String contentType = file.getContentType();
-        if (contentType != null && !contentType.equals("application/json") && !contentType.equals("application/x-zip-compressed")) {
-            return ResponseEntity.badRequest().body("Only JSON and ZIP files are allowed.");
+        System.out.println(contentType);
+        if (contentType != null && !contentType.equals("application/x-zip-compressed")) {
+            return ResponseEntity.badRequest().body("Only ZIP files are allowed.");
         }
-        fileProcessingService.processFile(file, Person.class);
+        String fileNameInMinio = file.getOriginalFilename() + "_" + UUID.randomUUID();
+        FileHistory fileHistory = new FileHistory();
+        fileHistory.setFileNameInMinio(fileNameInMinio);
+        fileHistory.setFileName(file.getOriginalFilename());
+        fileHistory.setOwnerId(userServices.getCurrentUserId());
+        fileHistory.setStatus(FileEnum.PROCESSING);
+        try {
+            fileHistory = fileHistoryService.save(fileHistory);
+            fileProcessingService.processFile(file, Person.class, fileNameInMinio, fileHistory);
+            fileProcessingService.saveHash(file);
+            fileHistoryService.updateStatus(fileHistory, FileEnum.COMPLETED);
+
+        } catch (Exception e) {
+            if (fileHistory.getStatus() != FileEnum.DUPLICATE) {
+                fileHistoryService.updateStatus(fileHistory, FileEnum.ERROR);
+            }
+            throw e;
+        }
         return ResponseEntity.ok().body(Map.of("message", "File uploaded successfully!"));
     }
+
     @GetMapping("/fileHistory")
     public List<FileHistoryDTO> getHistory() {
         List<FileHistoryDTO> fileHistoryListDTO = new ArrayList<>();
         List<FileHistory> file = fileHistoryRepository.getByOwnerId(userServices.getCurrentUserId());
         for (FileHistory fileHistory : file) {
-           fileHistoryListDTO.add(fileHistoryTODTO(fileHistory));
+            fileHistoryListDTO.add(fileHistoryTODTO(fileHistory));
         }
         return fileHistoryListDTO;
     }
 
+    @GetMapping("file/{id}")
+    public ResponseEntity<InputStreamResource> downloadFile(@PathVariable Long id) throws  NotFoundException {
+        FileHistory fileName = fileHistoryRepository.findById(id).orElseThrow(() -> new NotFoundException("файл не найден"));
+        try {
+            InputStream inputStream = minioService.getFile(fileName.getFileNameInMinio());
+            return ResponseEntity.ok().contentType(MediaType.APPLICATION_OCTET_STREAM).header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"").body(new InputStreamResource(inputStream));
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
+
+    @PostMapping("/transaction/{id}")
+    public ResponseEntity<Map<String, String>> handleTransaction(@PathVariable Long id,
+                                                    @RequestBody TransactionRequest request) throws Exception {
+        fileProcessingService.processUncommitedTransaction(id, Person.class, request.getDecision());
+        return ResponseEntity.ok(Collections.singletonMap("123", "Transaction processed successfully"));
+    }
+
     private FileHistoryDTO fileHistoryTODTO(FileHistory fileHistory) {
         FileHistoryDTO fileHistoryDTO = new FileHistoryDTO();
+        fileHistoryDTO.setId(fileHistory.getId());
         fileHistoryDTO.setFileName(fileHistory.getFileName());
         fileHistoryDTO.setOwnerId(fileHistory.getOwnerId());
         fileHistoryDTO.setStatus(fileHistory.getStatus());

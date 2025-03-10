@@ -6,5 +6,6 @@ public enum FileEnum {
     DUPLICATE,
     PENDING,
     ERROR,
-    PROCESSING
+    PROCESSING,
+
 }

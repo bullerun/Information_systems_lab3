@@ -28,5 +28,10 @@ public class FileHistory {
 
     @Builder.Default
     @Column(name = "status")
+    @Enumerated(EnumType.STRING)
     private FileEnum status = FileEnum.PENDING;
+
+    @NotNull
+    @Size(min = 1, max = 100)
+    private String fileNameInMinio;
 }

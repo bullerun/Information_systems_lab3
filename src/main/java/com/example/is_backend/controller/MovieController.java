@@ -1,12 +1,17 @@
 package com.example.is_backend.controller;
 
+import com.example.is_backend.authentication.service.UserServices;
 import com.example.is_backend.dto.MovieDTO;
+import com.example.is_backend.entity.FileEnum;
+import com.example.is_backend.entity.FileHistory;
 import com.example.is_backend.exception.InsufficientEditingRightsException;
 import com.example.is_backend.exception.MovieNotFoundException;
 import com.example.is_backend.exception.NotFoundException;
 import com.example.is_backend.exception.PersonValidationException;
 import com.example.is_backend.request.MovieRequest;
+import com.example.is_backend.service.FileHistoryService;
 import com.example.is_backend.service.FileProcessingService;
+import com.example.is_backend.service.MinioService;
 import com.example.is_backend.service.MovieService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Pattern;
@@ -20,6 +25,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 @RestController
 @RequiredArgsConstructor
@@ -28,6 +34,9 @@ public class MovieController {
     private final MovieService movieService;
     private final SimpMessagingTemplate messagingTemplate;
     private final FileProcessingService fileProcessingService;
+    private final MinioService minioService;
+    private final FileHistoryService fileHistoryService;
+    private final UserServices userServices;
 
     @ResponseStatus(HttpStatus.CREATED)
     @PostMapping("/add")
@@ -55,13 +64,34 @@ public class MovieController {
     }
 
     @PostMapping("/upload")
-    public ResponseEntity<?> uploadFiles(@RequestParam("file") MultipartFile file) throws PersonValidationException, NotFoundException, IllegalArgumentException, IOException, InsufficientEditingRightsException {
+    public ResponseEntity<?> uploadFiles(@RequestParam("file") MultipartFile file) throws PersonValidationException, NotFoundException, IllegalArgumentException, IOException, InterruptedException {
 
         String contentType = file.getContentType();
         if (contentType != null && !contentType.equals("application/json") && !contentType.equals("application/x-zip-compressed")) {
             return ResponseEntity.badRequest().body("Only JSON and ZIP files are allowed.");
         }
-        fileProcessingService.processFile(file, MovieRequest.class);
+        String fileNameInMinio = file.getOriginalFilename() + "_" + UUID.randomUUID();
+        FileHistory fileHistory = new FileHistory();
+        fileHistory.setFileNameInMinio(fileNameInMinio);
+        fileHistory.setFileName(file.getOriginalFilename());
+        fileHistory.setOwnerId(userServices.getCurrentUserId());
+        fileHistory.setStatus(FileEnum.PROCESSING);
+        try {
+            fileHistory.setId(fileHistoryService.save(fileHistory).getId());
+            fileProcessingService.processFile(file, MovieRequest.class, fileNameInMinio, fileHistory);
+            fileHistoryService.updateStatus(fileHistory, FileEnum.COMPLETED);
+        } catch (Exception e) {
+            try {
+                minioService.deleteFile(fileNameInMinio);
+                fileHistoryService.updateStatus(fileHistory, FileEnum.ERROR);
+            } catch (Exception ex) {
+                fileProcessingService.deleteHash(file);
+                System.err.println("Ошибка при удалении файла из MinIO: " + ex.getMessage());
+            }
+            throw e;
+        }
+
+
         return ResponseEntity.ok().body(Map.of("message", "File uploaded successfully!"));
     }
 }

@@ -3,6 +3,7 @@ package com.example.is_backend.service;
 import com.example.is_backend.authentication.service.UserServices;
 import com.example.is_backend.entity.FileEnum;
 import com.example.is_backend.entity.FileHistory;
+import com.example.is_backend.entity.TransactionDesicion;
 import com.example.is_backend.exception.InsufficientEditingRightsException;
 import com.example.is_backend.exception.NotFoundException;
 import com.example.is_backend.exception.PersonValidationException;
@@ -13,7 +14,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.*;
+import java.io.IOException;
+import java.io.InputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -27,13 +29,14 @@ import java.util.zip.ZipInputStream;
 public class FileProcessingService {
     private final FileHistoryRepository fileHistoryRepository;
     private final JsonService jsonService;
-//    private static final String HASH_FILE_PATH = "hashes.txt";
+    //    private static final String HASH_FILE_PATH = "hashes.txt";
     private final ConcurrentHashMap<String, String> storedHashes = new ConcurrentHashMap<>();
     private final UserServices userServices;
     private final MinioService minioService;
+    private final FileHistoryService fileHistoryService;
 
-    @PostConstruct
-    public void loadHashes() {
+//    @PostConstruct
+//    public void loadHashes() {
 //        File hashFile = new File(HASH_FILE_PATH);
 //        if (hashFile.exists()) {
 //            try (BufferedReader reader = new BufferedReader(new FileReader(hashFile))) {
@@ -49,49 +52,65 @@ public class FileProcessingService {
 //                throw new RuntimeException("Ошибка при загрузке файла хэшей", e);
 //            }
 //        }
+//    }
+
+    @PostConstruct
+    public void isProcessingTransactionHaveFile() {
+        for (FileHistory fileHistory : fileHistoryRepository.findAllByStatus(FileEnum.PROCESSING)) {
+            try {
+                minioService.getFile(fileHistory.getFileNameInMinio());
+            } catch (Exception e) {
+                fileHistory.setStatus(FileEnum.ERROR);
+                fileHistoryService.save(fileHistory);
+            }
+        }
+    }
+
+    @Transactional(rollbackFor = Exception.class, noRollbackFor = {
+            IllegalArgumentException.class, PersonValidationException.class,
+            NotFoundException.class, InsufficientEditingRightsException.class})
+    public void processFile(MultipartFile file, Class<?> clazz, String fileNameInMinio, FileHistory fileHistory)
+            throws IllegalArgumentException, IOException, PersonValidationException,
+            NotFoundException, InterruptedException {
+
+        try {
+            processZipFile(file.getInputStream(), clazz);
+        } catch (Exception e) {
+            try {
+                minioService.uploadFile(fileNameInMinio, file);
+            } catch (Exception ex) {
+                throw new RuntimeException("Чет Minio не работает и бд не работает");
+            }
+            throw e;
+        }
+
+        try {
+            minioService.uploadFile(fileNameInMinio, file);
+        } catch (Exception e) {
+            fileHistoryService.updateStatus(fileHistory, FileEnum.ERROR);
+            throw new RuntimeException("Чет Minio не работает");
+        }
+
+        Thread.sleep(10 * 1000);
     }
 
     @Transactional
-    public void processFile(MultipartFile file, Class<?> clazz) throws IllegalArgumentException, IOException, PersonValidationException, NotFoundException, InsufficientEditingRightsException {
-        String contentType = file.getContentType();
-        if (!Objects.equals(contentType, "application/x-zip-compressed")) {
-            throw new RuntimeException("Я ХОЧУ ЗИПКУ");
+    public void processUncommitedTransaction(Long fileHistoryId, Class<?> clazz, TransactionDesicion decision) throws Exception {
+        FileHistory fileHistory = fileHistoryService.findById(fileHistoryId);
+        if (fileHistory.getStatus() != FileEnum.PROCESSING) {
+            throw new RuntimeException("руки прочь");
         }
-
-        FileHistory fileHistory = new FileHistory();
-        fileHistory.setFileName(file.getOriginalFilename());
-        fileHistory.setOwnerId(userServices.getCurrentUserId());
-        fileHistory.setStatus(FileEnum.PROCESSING);
-        fileHistory = fileHistoryRepository.save(fileHistory);
-
-        String hash = calculateHash(file);
-        if (storedHashes.containsKey(hash)) {
-            fileHistory.setStatus(FileEnum.DUPLICATE);
-            fileHistoryRepository.save(fileHistory);
-            throw new IllegalArgumentException("Этот ZIP-файл уже был обработан");
-        }
-
-        processZipFile(file, clazz);
-        fileHistory.setStatus(FileEnum.COMPLETED);
-        fileHistoryRepository.save(fileHistory);
-        saveHash(file.getOriginalFilename(), hash);
-
-
-        try {
-            minioService.uploadFile("import-files", file.getOriginalFilename(), file);
-        } catch (Exception e) {
-            fileHistory.setStatus(FileEnum.REJECTED);
-            fileHistoryRepository.save(fileHistory);
-            deleteHash(hash);
-            try {
-                minioService.deleteFile("import-files", file.getOriginalFilename());
-            } catch (Exception ex) {
-                System.err.println("Ошибка при удалении файла из MinIO: " + ex.getMessage());
-            }
-            throw new RuntimeException("Чет Minio не работает");
+        if (decision == TransactionDesicion.APPROVE) {
+            InputStream stream = minioService.getFile(fileHistory.getFileNameInMinio());
+            processZipFile(stream, clazz);
+            fileHistoryService.updateStatus(fileHistoryId, FileEnum.COMPLETED);
+        } else if (decision == TransactionDesicion.REJECTED) {
+            minioService.deleteFile(fileHistory.getFileNameInMinio());
+            fileHistoryService.updateStatus(fileHistoryId, FileEnum.REJECTED);
+        } else {
+            throw new RuntimeException("а я не понял что вы хотите хехе");
         }
     }
-
 //    private void processJsonFile(MultipartFile file, Class<?> clazz) throws IOException {
 //        String content = new String(file.getBytes());
 //        System.out.println("Processing JSON file: " + file.getOriginalFilename());
@@ -99,9 +118,9 @@ public class FileProcessingService {
 //        var a = jsonService.parseJson(content, clazz);
 //    }
 
-    private void validateZipFile(MultipartFile file) throws IOException {
+    private void validateZipFile(InputStream file) throws IOException {
         int fileCount = 0;
-        try (ZipInputStream zipInputStream = new ZipInputStream(file.getInputStream())) {
+        try (ZipInputStream zipInputStream = new ZipInputStream(file)) {
             ZipEntry entry;
             while ((entry = zipInputStream.getNextEntry()) != null) {
                 if (!entry.getName().endsWith(".json")) {
@@ -116,10 +135,9 @@ public class FileProcessingService {
         }
     }
 
-    private void processZipFile(MultipartFile file, Class<?> clazz) throws IOException, PersonValidationException, NotFoundException, InsufficientEditingRightsException {
-        validateZipFile(file);
+    private void processZipFile(InputStream file, Class<?> clazz) throws IOException, PersonValidationException, NotFoundException {
         var jsonList = new ArrayList<String>();
-        try (ZipInputStream zipInputStream = new ZipInputStream(file.getInputStream())) {
+        try (ZipInputStream zipInputStream = new ZipInputStream(file)) {
             ZipEntry entry;
             while ((entry = zipInputStream.getNextEntry()) != null) {
                 System.out.println("Processing file in ZIP: " + entry.getName());
@@ -147,18 +165,18 @@ public class FileProcessingService {
             for (byte b : hashBytes) {
                 hashString.append(String.format("%02x", b));
             }
-            return hashString.toString();
+            return userServices.getCurrentUsername() + hashString;
         } catch (NoSuchAlgorithmException | IOException e) {
             throw new RuntimeException("Ошибка при вычислении хэша", e);
         }
     }
 
-    private void saveHash(String fileName, String hash) {
-        storedHashes.put(hash, fileName);
+    public void saveHash(MultipartFile file) {
+        storedHashes.put(calculateHash(file), Objects.requireNonNull(file.getOriginalFilename()));
     }
 
-    private void deleteHash(String hash) {
-        storedHashes.remove(hash);
+    public void deleteHash(MultipartFile file) {
+        storedHashes.remove(calculateHash(file));
 
     }
 
